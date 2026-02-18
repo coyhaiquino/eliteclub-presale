@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Elite Club - Presale</title>
+
+  <style>
+    html, body { margin:0; padding:0; width:100%; height:100%; background:#000; color:#fff; font-family: Arial, sans-serif; }
+    .center { width:100%; min-height:100%; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
+    .stack { width:100%; max-width:560px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; }
+
+    .logo-wrap { position: relative; width: min(70vw, 420px); }
+    .logo-img { width: 100%; height: auto; display:block; user-select:none; -webkit-tap-highlight-color: transparent; }
+
+    /* Hotspot del puro */
+    .cigar-hotspot {
+      position: absolute;
+      left: 60%;
+      top: 63%;
+      width: 35%;
+      height: 30%;
+      cursor: pointer;
+      background: rgba(255,255,255,0.0);
+      border-radius: 18px;
+    }
+
+    .hint { font-size:0.88rem; color:#cfcfcf; margin-top:-6px; }
+
+    .card {
+      width:100%;
+      background:#0a0a0a;
+      border:1px solid #222;
+      border-radius:14px;
+      padding:16px;
+      box-sizing:border-box;
+      text-align:left;
+      position: relative;
+    }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+    .pill { display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; background:#111; border:1px solid #222; white-space:nowrap; }
+    .muted { color:#bdbdbd; }
+    .big { font-size:1.05rem; font-weight:700; }
+
+    .progress-wrap {
+      width:100%;
+      height:14px;
+      border-radius:999px;
+      background:#151515;
+      border:1px solid #222;
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .progress-bar {
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background: linear-gradient(90deg, #1e90ff, #00c853);
+      transition: width 650ms ease;
+    }
+
+    .progress-wrap.small { height:10px; margin-top:8px; }
+    .progress-bar.stage {
+      background: linear-gradient(90deg, #ffb300, #ff6d00);
+      transition: width 650ms ease;
+    }
+
+    .subline {
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+
+    .lang-btn {
+      position:absolute;
+      top:12px;
+      right:12px;
+      background:#111;
+      border:1px solid #222;
+      color:#fff;
+      border-radius: 999px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .lang-btn:hover { filter: brightness(0.92); }
+
+    .tokenomics-btn {
+      width:100%;
+      margin-top:12px;
+      padding: 12px 12px;
+      border-radius: 12px;
+      background:#111;
+      border:1px solid #222;
+      color:#fff;
+      cursor:pointer;
+      font-weight:700;
+      letter-spacing: 0.5px;
+    }
+    .tokenomics-btn:hover { filter: brightness(0.92); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      box-sizing: border-box;
+      z-index: 9999;
+    }
+    .modal {
+      width: 100%;
+      max-width: 560px;
+      background: #0a0a0a;
+      border: 1px solid #222;
+      border-radius: 16px;
+      padding: 16px;
+      box-sizing: border-box;
+      text-align: left;
+      max-height: 80vh;
+      overflow: auto;
+    }
+    .modal-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      position: sticky;
+      top: 0;
+      background: #0a0a0a;
+      padding-top: 4px;
+      padding-bottom: 10px;
+      z-index: 2;
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 700; }
+    .close-btn {
+      background: #222;
+      border: 1px solid #333;
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+
+    select, input, button {
+      padding: 12px 12px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #0f0f0f;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    button { cursor:pointer; border:none; background:#1e90ff; }
+    button:hover { filter: brightness(0.92); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-secondary { background:#222; border:1px solid #333; }
+    .btnrow { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:12px; }
+    .note { margin-top:10px; font-size:0.82rem; color:#a9a9a9; line-height:1.35; text-align:center; }
+    a { color:#7bb6ff; text-decoration:none; }
+
+    .section-title { margin:14px 0 6px; font-weight:800; font-size: 1.02rem; }
+    .p { margin:0 0 10px; color:#d8d8d8; line-height:1.45; }
+    .bullet { margin: 0 0 10px 18px; color:#d8d8d8; line-height:1.45; }
+    .quote {
+      margin: 10px 0 14px;
+      padding: 12px;
+      border: 1px solid #222;
+      background:#0f0f0f;
+      border-radius: 12px;
+      color:#eaeaea;
+      font-style: italic;
+    }
+    .tok-table {
+      width:100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      border: 1px solid #222;
+      border-radius: 12px;
+      overflow:hidden;
+    }
+    .tok-table th, .tok-table td {
+      padding: 10px;
+      border-bottom: 1px solid #222;
+      text-align:left;
+      color:#d8d8d8;
+      font-size: 0.92rem;
+    }
+    .tok-table th { color:#fff; background:#111; }
+    .tok-table tr:last-child td { border-bottom:none; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+
+<body>
+  <div class="center">
+    <div class="stack">
+
+      <div class="logo-wrap">
+        <img src="logo.png" alt="Elite Club Logo" class="logo-img" />
+        <div class="cigar-hotspot" id="cigarHotspot" title="Buy"></div>
+      </div>
+
+      <div class="hint" id="hintText">Toca el puro para comprar</div>
+
+      <div class="card">
+        <button class="lang-btn" id="langBtn">EN</button>
+
+        <div class="row" style="justify-content:center;">
+          <span class="pill"><span class="muted" id="stageLabel">Etapa:</span> <span id="stageText" class="big">—</span></span>
+          <span class="pill"><span class="muted" id="priceLabel">Precio:</span> <span id="priceText" class="big">—</span></span>
+        </div>
+
+        <!-- Progreso total -->
+        <div class="progress-wrap" aria-label="Total progress">
+          <div class="progress-bar" id="progressTotal"></div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <span class="pill"><span class="muted" id="soldLabel">Vendido:</span> <span id="soldText" class="big">0</span></span>
+          <span class="pill"><span class="muted" id="totalLabel">Total:</span> <span id="totalText" class="big">30,000,000</span></span>
+          <span class="pill"><span class="muted">%</span> <span id="pctText" class="big">0%</span></span>
+        </div>
+
+        <!-- Progreso de etapa -->
+        <div class="progress-wrap small" aria-label="Stage progress">
+          <div class="progress-bar stage" id="progressStage"></div>
+        </div>
+
+        <div class="subline">
+          <span class="pill"><span class="muted" id="stageRemainLabel">Quedan etapa:</span> <span id="stageRemainText" class="big">—</span></span>
+          <span class="pill"><span class="muted" id="stagePctLabel">Etapa %:</span> <span id="stagePctText" class="big">—</span></span>
+        </div>
+
+        <!-- Countdown -->
+        <div class="subline">
+          <span class="pill"><span class="muted" id="stageEndsLabel">Termina etapa:</span> <span id="stageEndsText" class="big">—</span></span>
+          <span class="pill"><span class="muted" id="presaleEndsLabel">Termina preventa:</span> <span id="presaleEndsText" class="big">—</span></span>
+        </div>
+
+        <!-- NUEVO: Tokenomics -->
+        <button class="tokenomics-btn" id="tokenomicsBtn">TOKENOMICS</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL COMPRA -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title" id="modalTitle">Comprar ELITE</div>
+        <button class="close-btn" id="closeModal">Cerrar</button>
+      </div>
+
+      <div class="row" style="justify-content:center;">
+        <span class="pill"><span class="muted" id="statusLabel">Estado:</span> <span id="statusText" class="big">Conectando...</span></span>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <span class="pill"><span class="muted" id="myAllocLabel">Tu asignación:</span> <span id="myEliteText" class="big">0 ELITE</span></span>
+        <span class="pill"><span class="muted" id="myPaidLabel">Aportado:</span> <span id="myUsdText" class="big">$0</span></span>
+      </div>
+
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <select id="paySelect">
+          <option value="BNB">BNB</option>
+          <option value="USDT">USDT</option>
+          <option value="USDC">USDC</option>
+        </select>
+
+        <input id="amountInput" type="number" min="0" step="0.000001" placeholder="Monto a invertir" style="flex:1;" />
+        <button id="buyBtn" disabled>Comprar</button>
+      </div>
+
+      <div class="btnrow">
+        <button id="claimBtn" class="btn-secondary" disabled>CLAIM</button>
+      </div>
+
+      <div class="note" id="txNote"></div>
+      <div class="note" id="claimNote"></div>
+    </div>
+  </div>
+
+  <!-- MODAL TOKENOMICS -->
+  <div class="modal-backdrop" id="tokenomicsBackdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title" id="tokenomicsTitle">EliteClub — Tokenomics</div>
+        <button class="close-btn" id="closeTokenomics">Cerrar</button>
+      </div>
+
+      <div class="section-title" id="tVisionTitle">Visión</div>
+      <p class="p" id="tVision1">
+        EliteClub nace con un propósito claro: crear una comunidad verdaderamente élite de inversores.
+      </p>
+      <p class="p" id="tVision2">
+        Al participar en la preventa de ELITE, no solo compras un token: aseguras tu lugar dentro de un club privado de inversores,
+        construido desde cero, donde todos comienzan en igualdad de condiciones.
+      </p>
+
+      <div class="section-title" id="tFairTitle">Fair Launch</div>
+      <p class="p" id="tFair1">
+        No existen insiders. No existe lista blanca. No hay ventajas ocultas. Todos empezamos desde 0.
+      </p>
+      <ul class="bullet" id="tFairBullets">
+        <li>Sin preventas privadas ocultas</li>
+        <li>Sin privilegios para grupos cerrados</li>
+        <li>Las mismas reglas para todos</li>
+      </ul>
+
+      <div class="section-title" id="tAfterTitle">Después de la preventa</div>
+      <p class="p" id="tAfter1">
+        Al terminar la preventa, la comunidad EliteClub se reunirá en un entorno privado y se revelarán personas muy conocidas
+        dentro del mundo de las criptomonedas que formarán parte del proyecto.
+      </p>
+
+      <div class="quote" id="tQuote">
+        “No buscamos memes. Buscamos construir una sociedad élite dentro del ecosistema cripto.”
+      </div>
+
+      <div class="section-title" id="tListingsTitle">Estrategia de listados</div>
+      <p class="p" id="tListings1">
+        EliteClub no nace para morir en exchanges pequeños ni en plataformas sin impacto real.
+      </p>
+      <ul class="bullet" id="tListingsBullets">
+        <li>Enfoque en DEX y CEX reconocidos</li>
+        <li>Buscamos exposición, liquidez y prestigio</li>
+        <li>Si el proyecto es élite, su presencia en el mercado también debe serlo</li>
+      </ul>
+
+      <div class="section-title" id="tBnbTitle">¿Por qué BNB Chain?</div>
+      <p class="p" id="tBnb1">
+        EliteClub se construye sobre BNB Chain por estabilidad, seriedad y escalabilidad. Es una de las plataformas más sólidas,
+        utilizadas y confiables del ecosistema cripto, con infraestructura probada y un ecosistema maduro.
+      </p>
+
+      <div class="section-title" id="tTokenomicsTitle">Tokenomics (Supply: 100,000,000 ELITE)</div>
+
+      <table class="tok-table" aria-label="Tokenomics table">
+        <thead>
+          <tr>
+            <th>Asignación</th>
+            <th>%</th>
+            <th>Tokens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Preventa (3 etapas)</td>
+            <td>30%</td>
+            <td>30,000,000</td>
+          </tr>
+          <tr>
+            <td>Liquidez</td>
+            <td>20%</td>
+            <td>20,000,000</td>
+          </tr>
+          <tr>
+            <td>Desarrollo & Ecosistema</td>
+            <td>20%</td>
+            <td>20,000,000</td>
+          </tr>
+          <tr>
+            <td>Marketing & Expansión</td>
+            <td>15%</td>
+            <td>15,000,000</td>
+          </tr>
+          <tr>
+            <td>Equipo (con vesting)</td>
+            <td>10%</td>
+            <td>10,000,000</td>
+          </tr>
+          <tr>
+            <td>Reserva estratégica</td>
+            <td>5%</td>
+            <td>5,000,000</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="p" id="tNote1" style="margin-top:10px;">
+        Nota: La distribución puede ajustarse para optimizar liquidez, desarrollo y crecimiento, manteniendo siempre el principio
+        de transparencia y fair launch.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // CONFIG (tus contratos reales)
+    // =========================
+    const PRESALE_ADDRESS = "0xccc6f2BE50a0c5b26Ac0a4d4A998F860e8c3A2aE";
+    const USDT_ADDRESS = "0x55d398326f99059ff775485246999027b3197955";
+    const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
+    const EXPLORER_BASE = "https://bscscan.com/tx/";
+    const RPC = "https://bsc-dataseed.binance.org/";
+
+    // Total preventa: 30,000,000 ELITE (18 dec)
+    const TOTAL_PRESALE_TOKENS_WEI = ethers.BigNumber.from("30000000").mul(ethers.BigNumber.from("10").pow(18));
+
+    // =========================
+    // FECHAS (7 / 7 / 14 días) — inicio fijo
+    // Cambia SOLO esta fecha si quieres otro inicio.
+    // =========================
+    const PRESALE_START_MS = new Date("2026-02-13T00:00:00Z").getTime();
+    const DAY = 24 * 60 * 60 * 1000;
+    const STAGE1_DAYS = 7;
+    const STAGE2_DAYS = 7;
+    const STAGE3_DAYS = 14;
+
+    const STAGE_END_MS = {
+      1: PRESALE_START_MS + (STAGE1_DAYS * DAY),
+      2: PRESALE_START_MS + ((STAGE1_DAYS + STAGE2_DAYS) * DAY),
+      3: PRESALE_START_MS + ((STAGE1_DAYS + STAGE2_DAYS + STAGE3_DAYS) * DAY),
+    };
+
+    const PRESALE_END_MS = STAGE_END_MS[3];
+
+    // =========================
+    // BSC
+    // =========================
+    const BSC_CHAIN_ID_HEX = "0x38";
+    const BSC_PARAMS = {
+      chainId: BSC_CHAIN_ID_HEX,
+      chainName: "BNB Smart Chain",
+      nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+      rpcUrls: [RPC],
+      blockExplorerUrls: ["https://bscscan.com/"]
+    };
+
+    // =========================
+    // ABI
+    // =========================
+    const PRESALE_ABI = [
+      "function buyWithBNB() payable",
+      "function buyWithStable(address token, uint256 amount)",
+      "function purchasedTokens(address) view returns (uint256)",
+      "function contributedUsd1e6(address) view returns (uint256)",
+      "function soldTokens() view returns (uint256)",
+      "function currentStage() view returns (uint8 stage, uint256 priceUsd1e6, uint256 stageSold, uint256 stageCap)",
+      "function presaleFinalized() view returns (bool)",
+      "function claimEnabled() view returns (bool)",
+      "function claimed(address) view returns (bool)",
+      "function claim()"
+    ];
+
+    const ERC20_ABI = [
+      "function decimals() view returns (uint8)",
+      "function approve(address spender, uint256 amount) returns (bool)"
+    ];
+
+    // =========================
+    // UI refs
+    // =========================
+    const cigarHotspot = document.getElementById("cigarHotspot");
+
+    const hintText = document.getElementById("hintText");
+    const langBtn = document.getElementById("langBtn");
+
+    const stageLabel = document.getElementById("stageLabel");
+    const priceLabel = document.getElementById("priceLabel");
+    const soldLabel = document.getElementById("soldLabel");
+    const totalLabel = document.getElementById("totalLabel");
+
+    const stageText = document.getElementById("stageText");
+    const priceText = document.getElementById("priceText");
+    const progressTotal = document.getElementById("progressTotal");
+    const soldText = document.getElementById("soldText");
+    const totalText = document.getElementById("totalText");
+    const pctText = document.getElementById("pctText");
+
+    const progressStage = document.getElementById("progressStage");
+    const stageRemainLabel = document.getElementById("stageRemainLabel");
+    const stageRemainText = document.getElementById("stageRemainText");
+    const stagePctLabel = document.getElementById("stagePctLabel");
+    const stagePctText = document.getElementById("stagePctText");
+
+    const stageEndsLabel = document.getElementById("stageEndsLabel");
+    const stageEndsText = document.getElementById("stageEndsText");
+    const presaleEndsLabel = document.getElementById("presaleEndsLabel");
+    const presaleEndsText = document.getElementById("presaleEndsText");
+
+    const tokenomicsBtn = document.getElementById("tokenomicsBtn");
+    const tokenomicsBackdrop = document.getElementById("tokenomicsBackdrop");
+    const closeTokenomics = document.getElementById("closeTokenomics");
+
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const closeModal = document.getElementById("closeModal");
+    const modalTitle = document.getElementById("modalTitle");
+
+    const statusLabel = document.getElementById("statusLabel");
+    const statusText = document.getElementById("statusText");
+    const myAllocLabel = document.getElementById("myAllocLabel");
+    const myPaidLabel = document.getElementById("myPaidLabel");
+    const myEliteText = document.getElementById("myEliteText");
+    const myUsdText = document.getElementById("myUsdText");
+
+    const paySelect = document.getElementById("paySelect");
+    const amountInput = document.getElementById("amountInput");
+    const buyBtn = document.getElementById("buyBtn");
+
+    const claimBtn = document.getElementById("claimBtn");
+    const txNote = document.getElementById("txNote");
+    const claimNote = document.getElementById("claimNote");
+
+    totalText.textContent = (30_000_000).toLocaleString("es-CL");
+
+    // =========================
+    // i18n (ES/EN para UI principal, tokenomics queda en ES por ahora)
+    // =========================
+    let lang = "es";
+    const T = {
+      es: {
+        hint: "Toca el puro para comprar",
+        stage: "Etapa:",
+        price: "Precio:",
+        sold: "Vendido:",
+        total: "Total:",
+        stageRemain: "Quedan etapa:",
+        stagePct: "Etapa %:",
+        stageEnds: "Termina etapa:",
+        presaleEnds: "Termina preventa:",
+        modalTitle: "Comprar ELITE",
+        close: "Cerrar",
+        status: "Estado:",
+        myAlloc: "Tu asignación:",
+        myPaid: "Aportado:",
+        buy: "Comprar",
+        claim: "CLAIM",
+        connecting: "Conectando...",
+        ended: "Finalizado",
+        connected: "Conectado: "
+      },
+      en: {
+        hint: "Tap the cigar to buy",
+        stage: "Stage:",
+        price: "Price:",
+        sold: "Sold:",
+        total: "Total:",
+        stageRemain: "Stage left:",
+        stagePct: "Stage %:",
+        stageEnds: "Stage ends:",
+        presaleEnds: "Presale ends:",
+        modalTitle: "Buy ELITE",
+        close: "Close",
+        status: "Status:",
+        myAlloc: "Your allocation:",
+        myPaid: "Contributed:",
+        buy: "Buy",
+        claim: "CLAIM",
+        connecting: "Connecting...",
+        ended: "Ended",
+        connected: "Connected: "
+      }
+    };
+
+    function applyLang() {
+      const t = T[lang];
+      hintText.textContent = t.hint;
+      stageLabel.textContent = t.stage;
+      priceLabel.textContent = t.price;
+      soldLabel.textContent = t.sold;
+      totalLabel.textContent = t.total;
+      stageRemainLabel.textContent = t.stageRemain;
+      stagePctLabel.textContent = t.stagePct;
+      stageEndsLabel.textContent = t.stageEnds;
+      presaleEndsLabel.textContent = t.presaleEnds;
+      modalTitle.textContent = t.modalTitle;
+      closeModal.textContent = t.close;
+      statusLabel.textContent = t.status;
+      myAllocLabel.textContent = t.myAlloc;
+      myPaidLabel.textContent = t.myPaid;
+      buyBtn.textContent = t.buy;
+      claimBtn.textContent = t.claim;
+      langBtn.textContent = (lang === "es") ? "EN" : "ES";
+      amountInput.placeholder = (lang === "es") ? "Monto a invertir" : "Amount to invest";
+    }
+
+    langBtn.addEventListener("click", () => {
+      lang = (lang === "es") ? "en" : "es";
+      applyLang();
+      refreshCountdown();
+    });
+
+    applyLang();
+
+    // =========================
+    // Helpers
+    // =========================
+    function shortAddr(a) { return a ? a.slice(0,6) + "..." + a.slice(-4) : ""; }
+
+    function fmtTokenWhole(weiBn) {
+      const v = ethers.utils.formatUnits(weiBn, 18);
+      const n = Math.floor(Number(v));
+      if (!isFinite(n)) return v;
+      return n.toLocaleString("es-CL");
+    }
+
+    function fmtElite(wei) {
+      const v = ethers.utils.formatUnits(wei, 18);
+      const n = Number(v);
+      if (!isFinite(n)) return v + " ELITE";
+      return n.toLocaleString("es-CL", { maximumFractionDigits: 4 }) + " ELITE";
+    }
+
+    function fmtUsd1e6(u) {
+      const usd = Number(u) / 1e6;
+      return "$" + usd.toLocaleString("en-US", { maximumFractionDigits: 2 });
+    }
+
+    function fmtUsdPriceFromMicro(p) {
+      const usd = Number(p) / 1e6;
+      return "$" + usd.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
+    }
+
+    function clampPct(x) { return Math.max(0, Math.min(100, x)); }
+
+    function formatCountdown(msLeft) {
+      if (msLeft <= 0) return T[lang].ended;
+      const sec = Math.floor(msLeft / 1000);
+      const d = Math.floor(sec / 86400);
+      const h = Math.floor((sec % 86400) / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d}d ${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    async function ensureBsc() {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (chainId === BSC_CHAIN_ID_HEX) return;
+      try {
+        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BSC_CHAIN_ID_HEX }] });
+      } catch (err) {
+        if (err && err.code === 4902) {
+          await window.ethereum.request({ method: "wallet_addEthereumChain", params: [BSC_PARAMS] });
+        } else { throw err; }
+      }
+    }
+
+    // =========================
+    // Reads + progress
+    // =========================
+    const readProvider = new ethers.providers.JsonRpcProvider(RPC);
+    const presaleRead = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, readProvider);
+
+    let lastStageNumber = 1;
+
+    async function refreshProgress() {
+      try {
+        const sold = await presaleRead.soldTokens();
+        const st = await presaleRead.currentStage();
+
+        const stageNum = Number(st.stage.toString());
+        lastStageNumber = stageNum;
+
+        stageText.textContent = `Stage ${stageNum} / 3`;
+        priceText.textContent = fmtUsdPriceFromMicro(st.priceUsd1e6);
+
+        soldText.textContent = fmtTokenWhole(sold);
+
+        const pctTotal = sold.mul(10_000).div(TOTAL_PRESALE_TOKENS_WEI).toNumber() / 100;
+        const pctTotalC = clampPct(pctTotal);
+        progressTotal.style.width = pctTotalC.toFixed(2) + "%";
+        pctText.textContent = pctTotalC.toFixed(2) + "%";
+
+        const stageSold = st.stageSold;
+        const stageCap = st.stageCap;
+
+        const stageRemainWei = stageCap.sub(stageSold);
+        stageRemainText.textContent = fmtTokenWhole(stageRemainWei);
+
+        const pctStage = stageSold.mul(10_000).div(stageCap).toNumber() / 100;
+        const pctStageC = clampPct(pctStage);
+        progressStage.style.width = pctStageC.toFixed(2) + "%";
+        stagePctText.textContent = pctStageC.toFixed(2) + "%";
+      } catch (e) {
+        console.error("refreshProgress error", e);
+      }
+    }
+
+    function refreshCountdown() {
+      const now = Date.now();
+      const stageEnd = STAGE_END_MS[lastStageNumber];
+      stageEndsText.textContent = formatCountdown(stageEnd - now);
+      presaleEndsText.textContent = formatCountdown(PRESALE_END_MS - now);
+    }
+
+    refreshProgress().then(refreshCountdown);
+    setInterval(async () => { await refreshProgress(); refreshCountdown(); }, 15000);
+    setInterval(refreshCountdown, 1000);
+
+    // =========================
+    // Modales: open/close
+    // =========================
+    function openModal() { modalBackdrop.style.display = "flex"; }
+    function closeModalFn() {
+      modalBackdrop.style.display = "none";
+      txNote.textContent = "";
+      claimNote.textContent = "";
+      amountInput.value = "";
+      statusText.textContent = T[lang].connecting;
+      buyBtn.disabled = true;
+      claimBtn.disabled = true;
+    }
+    closeModal.addEventListener("click", closeModalFn);
+    modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) closeModalFn(); });
+
+    function openTokenomics() { tokenomicsBackdrop.style.display = "flex"; }
+    function closeTokenomicsFn() { tokenomicsBackdrop.style.display = "none"; }
+    tokenomicsBtn.addEventListener("click", openTokenomics);
+    closeTokenomics.addEventListener("click", closeTokenomicsFn);
+    tokenomicsBackdrop.addEventListener("click", (e) => { if (e.target === tokenomicsBackdrop) closeTokenomicsFn(); });
+
+    // =========================
+    // Web3 state + connect
+    // =========================
+    let provider = null;
+    let signer = null;
+    let account = null;
+    let presaleWrite = null;
+
+    async function refreshMyStats() {
+      if (!presaleWrite || !account) return;
+
+      const elite = await presaleWrite.purchasedTokens(account);
+      const usd1e6 = await presaleWrite.contributedUsd1e6(account);
+
+      myEliteText.textContent = fmtElite(elite);
+      myUsdText.textContent = fmtUsd1e6(usd1e6);
+
+      const isFinalized = await presaleWrite.presaleFinalized();
+      const isClaimEnabled = await presaleWrite.claimEnabled();
+      const isClaimed = await presaleWrite.claimed(account);
+
+      if (isFinalized && isClaimEnabled && !isClaimed && elite.gt(0)) {
+        claimBtn.disabled = false;
+        claimNote.textContent = (lang === "es")
+          ? "Claim disponible: puedes retirar tus ELITE."
+          : "Claim available: you can claim your ELITE.";
+      } else if (isFinalized && !isClaimEnabled) {
+        claimBtn.disabled = true;
+        claimNote.textContent = (lang === "es")
+          ? "La preventa terminó, pero el claim aún no está habilitado."
+          : "Presale ended, but claim is not enabled yet.";
+      } else if (isClaimed) {
+        claimBtn.disabled = true;
+        claimNote.textContent = (lang === "es") ? "Ya hiciste claim." : "Already claimed.";
+      } else {
+        claimBtn.disabled = true;
+        claimNote.textContent = "";
+      }
+    }
+
+    async function connectAuto() {
+      txNote.textContent = "";
+      claimNote.textContent = "";
+      statusText.textContent = T[lang].connecting;
+      buyBtn.disabled = true;
+      claimBtn.disabled = true;
+
+      if (!window.ethereum) throw new Error("NO_METAMASK");
+
+      await ensureBsc();
+
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      account = accounts[0];
+
+      presaleWrite = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, signer);
+
+      statusText.textContent = T[lang].connected + shortAddr(account);
+      buyBtn.disabled = false;
+
+      await refreshMyStats();
+    }
+
+    // =========================
+    // Buy
+    // =========================
+    async function buy() {
+      if (!account) {
+        await connectAuto();
+        if (!account) return;
+      }
+
+      const currency = paySelect.value;
+      const raw = (amountInput.value || "").trim();
+      if (!raw || Number(raw) <= 0) {
+        alert(lang === "es" ? "Ingresa un monto." : "Enter an amount.");
+        return;
+      }
+
+      txNote.textContent = "";
+
+      if (currency === "BNB") {
+        const tx = await presaleWrite.buyWithBNB({ value: ethers.utils.parseEther(raw) });
+        txNote.innerHTML = `${lang === "es" ? "Transacción enviada:" : "Transaction sent:"} <a href="${EXPLORER_BASE + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        await tx.wait();
+      } else {
+        const tokenAddr = currency === "USDT" ? USDT_ADDRESS : USDC_ADDRESS;
+
+        const token = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
+        const dec = await token.decimals();
+        const amt = ethers.utils.parseUnits(raw, dec);
+
+        const tx1 = await token.approve(PRESALE_ADDRESS, amt);
+        txNote.innerHTML = `${lang === "es" ? "Approve enviado:" : "Approve sent:"} <a href="${EXPLORER_BASE + tx1.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        await tx1.wait();
+
+        const tx2 = await presaleWrite.buyWithStable(tokenAddr, amt);
+        txNote.innerHTML = `${lang === "es" ? "Compra enviada:" : "Purchase sent:"} <a href="${EXPLORER_BASE + tx2.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        await tx2.wait();
+      }
+
+      await refreshMyStats();
+      await refreshProgress();
+      refreshCountdown();
+      amountInput.value = "";
+    }
+
+    buyBtn.addEventListener("click", async () => {
+      try { await buy(); }
+      catch (e) {
+        console.error(e);
+        alert("Error: " + (e?.reason || e?.message || e));
+      }
+    });
+
+    // =========================
+    // Claim
+    // =========================
+    async function claim() {
+      if (!account) {
+        await connectAuto();
+        if (!account) return;
+      }
+      claimBtn.disabled = true;
+      claimNote.textContent = (lang === "es") ? "Enviando claim..." : "Sending claim...";
+      const tx = await presaleWrite.claim();
+      txNote.innerHTML = `${lang === "es" ? "Claim enviado:" : "Claim sent:"} <a href="${EXPLORER_BASE + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+      await tx.wait();
+      await refreshMyStats();
+      claimNote.textContent = (lang === "es") ? "Claim completado ✅" : "Claim completed ✅";
+    }
+
+    claimBtn.addEventListener("click", async () => {
+      try { await claim(); }
+      catch (e) {
+        console.error(e);
+        claimNote.textContent = "";
+        alert("Error: " + (e?.reason || e?.message || e));
+      }
+    });
+
+    // =========================
+    // Click puro: abre modal + conecta auto
+    // Si falla => cierra modal
+    // =========================
+    cigarHotspot.addEventListener("click", async () => {
+      openModal();
+      try {
+        await connectAuto();
+      } catch (e) {
+        console.error(e);
+        closeModalFn();
+
+        if (e && e.message === "NO_METAMASK") {
+          alert(lang === "es"
+            ? "No se detectó MetaMask. Abre esta página en el navegador de MetaMask o instala MetaMask."
+            : "MetaMask not detected. Open this page in MetaMask browser or install MetaMask."
+          );
+        } else if (e && e.code === 4001) {
+          alert(lang === "es"
+            ? "Conexión cancelada. Toca el puro nuevamente y acepta en MetaMask para comprar."
+            : "Connection canceled. Tap the cigar again and approve in MetaMask."
+          );
+        } else {
+          alert(lang === "es"
+            ? "No se pudo conectar a MetaMask. Reintenta tocando el puro."
+            : "Could not connect to MetaMask. Tap the cigar to try again."
+          );
+        }
+      }
+    });
+
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", () => window.location.reload());
+      window.ethereum.on("chainChanged", () => window.location.reload());
+    }
+  </script>
+</body>
+</html>
