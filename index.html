@@ -216,6 +216,14 @@
     }
     .tok-table th { color:#fff; background:#111; }
     .tok-table tr:last-child td { border-bottom:none; }
+
+    /* ================================
+       FIX: Web3Modal por encima del modal
+       ================================ */
+    .web3modal-modal,
+    .web3modal-overlay {
+      z-index: 20000 !important;
+    }
   </style>
 
   <!-- ethers v5 -->
@@ -302,7 +310,7 @@
         <span class="pill"><span class="muted" id="statusLabel">Estado:</span> <span id="statusText" class="big">Desconectado</span></span>
       </div>
 
-      <!-- NUEVO: botones multiwallet -->
+      <!-- Botones multiwallet -->
       <div class="btnrow" style="margin-top:10px;">
         <button id="connectBtn">Conectar wallet</button>
         <button id="disconnectBtn" class="btn-secondary" disabled>Desconectar</button>
@@ -439,15 +447,12 @@
     const EXPLORER_ADDR = "https://bscscan.com/address/";
     const RPC = "https://bsc-dataseed.binance.org/";
 
-    // Total preventa: 30,000,000 ELITE (18 dec)
     const TOTAL_PRESALE_TOKENS_WEI = ethers.BigNumber.from("30000000").mul(ethers.BigNumber.from("10").pow(18));
 
-    // Fechas (front-only)
+    // Fechas
     const PRESALE_START_MS = new Date("2026-02-13T00:00:00Z").getTime();
     const DAY = 24 * 60 * 60 * 1000;
-    const STAGE1_DAYS = 7;
-    const STAGE2_DAYS = 7;
-    const STAGE3_DAYS = 14;
+    const STAGE1_DAYS = 7, STAGE2_DAYS = 7, STAGE3_DAYS = 14;
     const STAGE_END_MS = {
       1: PRESALE_START_MS + (STAGE1_DAYS * DAY),
       2: PRESALE_START_MS + ((STAGE1_DAYS + STAGE2_DAYS) * DAY),
@@ -466,9 +471,7 @@
       blockExplorerUrls: ["https://bscscan.com/"]
     };
 
-    // =========================
     // ABI
-    // =========================
     const PRESALE_ABI = [
       "function buyWithBNB() payable",
       "function buyWithStable(address token, uint256 amount)",
@@ -481,7 +484,6 @@
       "function claimed(address) view returns (bool)",
       "function claim()"
     ];
-
     const ERC20_ABI = [
       "function decimals() view returns (uint8)",
       "function approve(address spender, uint256 amount) returns (bool)"
@@ -517,9 +519,7 @@
     const presaleEndsLabel = document.getElementById("presaleEndsLabel");
     const presaleEndsText = document.getElementById("presaleEndsText");
 
-    const netLabel = document.getElementById("netLabel");
     const netText = document.getElementById("netText");
-    const addrLabel = document.getElementById("addrLabel");
     const presaleAddrShort = document.getElementById("presaleAddrShort");
     const copyAddrBtn = document.getElementById("copyAddrBtn");
     const presaleLink = document.getElementById("presaleLink");
@@ -530,16 +530,11 @@
 
     const modalBackdrop = document.getElementById("modalBackdrop");
     const closeModal = document.getElementById("closeModal");
-    const modalTitle = document.getElementById("modalTitle");
-
-    const statusLabel = document.getElementById("statusLabel");
     const statusText = document.getElementById("statusText");
 
     const connectBtn = document.getElementById("connectBtn");
     const disconnectBtn = document.getElementById("disconnectBtn");
 
-    const myAllocLabel = document.getElementById("myAllocLabel");
-    const myPaidLabel = document.getElementById("myPaidLabel");
     const myEliteText = document.getElementById("myEliteText");
     const myUsdText = document.getElementById("myUsdText");
 
@@ -547,12 +542,8 @@
     const amountInput = document.getElementById("amountInput");
     const buyBtn = document.getElementById("buyBtn");
 
-    const bnbUsdLabel = document.getElementById("bnbUsdLabel");
     const bnbUsdText  = document.getElementById("bnbUsdText");
-
-    const estUsdLabel = document.getElementById("estUsdLabel");
     const estUsdText  = document.getElementById("estUsdText");
-    const estEliteLabel = document.getElementById("estEliteLabel");
     const estEliteText  = document.getElementById("estEliteText");
     const estNote = document.getElementById("estNote");
 
@@ -561,178 +552,53 @@
     const claimNote = document.getElementById("claimNote");
 
     totalText.textContent = (30_000_000).toLocaleString("es-CL");
-    presaleAddrShort.textContent = "—";
     presaleAddrShort.textContent = shortAddr(PRESALE_ADDRESS);
     presaleLink.href = EXPLORER_ADDR + PRESALE_ADDRESS;
 
-    // =========================
-    // i18n (mínimo necesario)
-    // =========================
-    let lang = "es";
-    const T = {
-      es: {
-        hint: "Toca el puro para comprar",
-        stage: "Etapa:",
-        price: "Precio:",
-        sold: "Vendido:",
-        total: "Total:",
-        stageRemain: "Quedan etapa:",
-        stagePct: "Etapa %:",
-        stageEnds: "Termina etapa:",
-        presaleEnds: "Termina preventa:",
-        modalTitle: "Comprar ELITE",
-        close: "Cerrar",
-        status: "Estado:",
-        myAlloc: "Tu asignación:",
-        myPaid: "Aportado:",
-        buy: "Comprar",
-        claim: "CLAIM",
-        ended: "Finalizado",
-        net: "Red:",
-        presale: "Preventa:",
-        netOk: "BNB Chain ✅",
-        netWrong: "Cambia a BNB Chain ⚠️",
-        copy: "Copiar",
-        copied: "✅ Copiado",
-        bnbUsd: "BNB/USD:",
-        estUsd: "USD estimado:",
-        estElite: "Tokens a reclamar:",
-        estBnbNote: "Estimación usando precio BNB/USD (aprox).",
-        estStableNote: "Estimación usando stablecoin (≈ 1 USD).",
-        estNeedAmount: "Ingresa un monto para estimar.",
-        estPriceMissing: "Aún no hay precio de etapa. Espera un momento y reintenta.",
-        disconnected: "Desconectado",
-        connecting: "Conectando...",
-        connected: "Conectado: ",
-        connect: "Conectar wallet",
-        disconnect: "Desconectar",
-        switchWarn: "Tu wallet no está en BNB Chain. Cámbiala a BNB Smart Chain para comprar."
-      },
-      en: {
-        hint: "Tap the cigar to buy",
-        stage: "Stage:",
-        price: "Price:",
-        sold: "Sold:",
-        total: "Total:",
-        stageRemain: "Stage left:",
-        stagePct: "Stage %:",
-        stageEnds: "Stage ends:",
-        presaleEnds: "Presale ends:",
-        modalTitle: "Buy ELITE",
-        close: "Close",
-        status: "Status:",
-        myAlloc: "Your allocation:",
-        myPaid: "Contributed:",
-        buy: "Buy",
-        claim: "CLAIM",
-        ended: "Ended",
-        net: "Network:",
-        presale: "Presale:",
-        netOk: "BNB Chain ✅",
-        netWrong: "Switch to BNB Chain ⚠️",
-        copy: "Copy",
-        copied: "✅ Copied",
-        bnbUsd: "BNB/USD:",
-        estUsd: "Estimated USD:",
-        estElite: "Tokens to claim:",
-        estBnbNote: "Estimated using BNB/USD price (approx).",
-        estStableNote: "Estimated using stablecoin (≈ 1 USD).",
-        estNeedAmount: "Enter an amount to estimate.",
-        estPriceMissing: "Stage price not loaded yet. Wait a moment and try again.",
-        disconnected: "Disconnected",
-        connecting: "Connecting...",
-        connected: "Connected: ",
-        connect: "Connect wallet",
-        disconnect: "Disconnect",
-        switchWarn: "Your wallet is not on BNB Chain. Switch to BNB Smart Chain to buy."
+    // Copy
+    copyAddrBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(PRESALE_ADDRESS);
+        copyAddrBtn.textContent = "✅ Copiado";
+        setTimeout(() => (copyAddrBtn.textContent = "Copiar"), 1200);
+      } catch {
+        alert("Copia manual: " + PRESALE_ADDRESS);
       }
-    };
-
-    function applyLang() {
-      const t = T[lang];
-      hintText.textContent = t.hint;
-      stageLabel.textContent = t.stage;
-      priceLabel.textContent = t.price;
-      soldLabel.textContent = t.sold;
-      totalLabel.textContent = t.total;
-      stageRemainLabel.textContent = t.stageRemain;
-      stagePctLabel.textContent = t.stagePct;
-      stageEndsLabel.textContent = t.stageEnds;
-      presaleEndsLabel.textContent = t.presaleEnds;
-      modalTitle.textContent = t.modalTitle;
-      closeModal.textContent = t.close;
-      statusLabel.textContent = t.status;
-      myAllocLabel.textContent = t.myAlloc;
-      myPaidLabel.textContent = t.myPaid;
-      buyBtn.textContent = t.buy;
-      claimBtn.textContent = t.claim;
-
-      netLabel.textContent = t.net;
-      addrLabel.textContent = t.presale;
-
-      copyAddrBtn.textContent = t.copy;
-      bnbUsdLabel.textContent = t.bnbUsd;
-      estUsdLabel.textContent = t.estUsd;
-      estEliteLabel.textContent = t.estElite;
-
-      connectBtn.textContent = t.connect;
-      disconnectBtn.textContent = t.disconnect;
-
-      langBtn.textContent = (lang === "es") ? "EN" : "ES";
-      amountInput.placeholder = (lang === "es") ? "Monto a invertir" : "Amount to invest";
-    }
-    langBtn.addEventListener("click", () => {
-      lang = (lang === "es") ? "en" : "es";
-      applyLang();
-      refreshCountdown();
-      updateEstimate();
-      refreshNetworkUi();
-      refreshWalletUi();
     });
-    applyLang();
 
-    // =========================
     // Helpers
-    // =========================
     function shortAddr(a) { return a ? a.slice(0,6) + "..." + a.slice(-4) : ""; }
     function clampPct(x) { return Math.max(0, Math.min(100, x)); }
-
     function fmtTokenWhole(weiBn) {
       const v = ethers.utils.formatUnits(weiBn, 18);
       const n = Math.floor(Number(v));
       if (!isFinite(n)) return v;
       return n.toLocaleString("es-CL");
     }
-
     function fmtElite(wei) {
       const v = ethers.utils.formatUnits(wei, 18);
       const n = Number(v);
       if (!isFinite(n)) return v + " ELITE";
       return n.toLocaleString("es-CL", { maximumFractionDigits: 4 }) + " ELITE";
     }
-
     function fmtUsd1e6(u) {
       const usd = Number(u) / 1e6;
       return "$" + usd.toLocaleString("en-US", { maximumFractionDigits: 2 });
     }
-
     function fmtUsdPriceFromMicro(p) {
       const usd = Number(p) / 1e6;
       return "$" + usd.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
     }
-
     function fmtUsd(x) {
       if (!isFinite(x)) return "—";
       return "$" + x.toLocaleString("en-US", { maximumFractionDigits: 2 });
     }
-
     function fmtEliteNumber(x) {
       if (!isFinite(x)) return "—";
       return x.toLocaleString("es-CL", { maximumFractionDigits: 4 }) + " ELITE";
     }
-
     function formatCountdown(msLeft) {
-      if (msLeft <= 0) return T[lang].ended;
+      if (msLeft <= 0) return "Finalizado";
       const sec = Math.floor(msLeft / 1000);
       const d = Math.floor(sec / 86400);
       const h = Math.floor((sec % 86400) / 3600);
@@ -742,31 +608,18 @@
       return `${d}d ${pad(h)}:${pad(m)}:${pad(s)}`;
     }
 
-    // Copiar dirección
-    copyAddrBtn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(PRESALE_ADDRESS);
-        copyAddrBtn.textContent = T[lang].copied;
-        setTimeout(() => (copyAddrBtn.textContent = T[lang].copy), 1200);
-      } catch {
-        alert((lang === "es" ? "Copia manual:" : "Copy manually: ") + " " + PRESALE_ADDRESS);
-      }
-    });
-
-    // =========================
-    // Providers (Read + Write)
-    // =========================
+    // Read provider
     const readProvider = new ethers.providers.JsonRpcProvider(RPC);
     const presaleRead = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, readProvider);
 
+    // Web3Modal
     let web3Modal = null;
-    let externalProvider = null; // provider devuelto por Web3Modal (injected o walletconnect)
-    let provider = null;         // ethers.Web3Provider (write)
+    let externalProvider = null;
+    let provider = null;
     let signer = null;
     let account = null;
     let presaleWrite = null;
 
-    // init web3modal (Injected + WalletConnect)
     function initWeb3Modal() {
       const providerOptions = {
         walletconnect: {
@@ -779,7 +632,6 @@
           }
         }
       };
-
       web3Modal = new Web3Modal.default({
         cacheProvider: true,
         providerOptions,
@@ -803,7 +655,6 @@
     }
 
     async function trySwitchToBsc(ext) {
-      // Solo funciona en algunos injected wallets.
       if (!ext?.request) return false;
       try {
         const cid = await ext.request({ method: "eth_chainId" });
@@ -824,34 +675,26 @@
 
     function refreshWalletUi() {
       if (!account) {
-        statusText.textContent = T[lang].disconnected;
+        statusText.textContent = "Desconectado";
         buyBtn.disabled = true;
         claimBtn.disabled = true;
         disconnectBtn.disabled = true;
         return;
       }
-      statusText.textContent = T[lang].connected + shortAddr(account);
+      statusText.textContent = "Conectado: " + shortAddr(account);
       buyBtn.disabled = false;
       disconnectBtn.disabled = false;
     }
 
     async function refreshNetworkUi() {
-      if (!externalProvider) {
-        netText.textContent = "—";
-        return;
-      }
+      if (!externalProvider) { netText.textContent = "—"; return; }
       const cid = await getChainIdSafe(externalProvider);
-      if (cid === BSC_CHAIN_ID) netText.textContent = T[lang].netOk;
-      else netText.textContent = T[lang].netWrong;
+      netText.textContent = (cid === BSC_CHAIN_ID) ? "BNB Chain ✅" : "Cambia a BNB Chain ⚠️";
     }
 
-    // =========================
-    // Connect / Disconnect (Multiwallet)
-    // =========================
     async function connectWallet(openSelector = true) {
       try {
-        statusText.textContent = T[lang].connecting;
-
+        statusText.textContent = "Conectando...";
         if (!web3Modal) initWeb3Modal();
 
         externalProvider = openSelector
@@ -860,26 +703,15 @@
 
         if (!externalProvider) throw new Error("no_provider");
 
-        // Wrap ethers
         provider = new ethers.providers.Web3Provider(externalProvider, "any");
         signer = provider.getSigner();
 
-        // accounts
         const accounts = await provider.listAccounts();
         account = accounts && accounts.length ? accounts[0] : null;
 
-        // Ensure BSC if possible
-        const switched = await trySwitchToBsc(externalProvider);
-        // Si no pudo switch y no está en BSC, avisamos (no bloqueamos, pero comprar fallará en red equivocada)
-        const cid = await getChainIdSafe(externalProvider);
-        if (!switched && cid !== null && cid !== BSC_CHAIN_ID) {
-          alert(T[lang].switchWarn);
-        }
-
-        // set contract write
+        await trySwitchToBsc(externalProvider);
         presaleWrite = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, signer);
 
-        // Events (WalletConnect también dispara)
         if (externalProvider.on) {
           externalProvider.on("accountsChanged", (accs) => {
             account = (accs && accs.length) ? accs[0] : null;
@@ -888,12 +720,9 @@
           });
           externalProvider.on("chainChanged", () => {
             refreshNetworkUi();
-            // refrescar estimación no depende de chain, pero stats sí
             refreshMyStats();
           });
-          externalProvider.on("disconnect", () => {
-            disconnectWallet();
-          });
+          externalProvider.on("disconnect", () => disconnectWallet());
         }
 
         refreshWalletUi();
@@ -901,31 +730,19 @@
         await refreshMyStats();
       } catch (e) {
         console.error(e);
-        statusText.textContent = T[lang].disconnected;
+        statusText.textContent = "Desconectado";
         buyBtn.disabled = true;
         claimBtn.disabled = true;
         disconnectBtn.disabled = true;
 
-        if (e && e.code === 4001) {
-          alert(lang === "es" ? "Conexión cancelada." : "Connection canceled.");
-        } else {
-          alert(lang === "es" ? "No se pudo conectar la wallet." : "Could not connect wallet.");
-        }
+        if (e && e.code === 4001) alert("Conexión cancelada.");
+        else alert("No se pudo conectar la wallet.");
       }
     }
 
     async function disconnectWallet() {
-      try {
-        if (externalProvider && typeof externalProvider.disconnect === "function") {
-          await externalProvider.disconnect();
-        }
-      } catch {}
-
-      try {
-        if (externalProvider && externalProvider.close) {
-          await externalProvider.close();
-        }
-      } catch {}
+      try { if (externalProvider && typeof externalProvider.disconnect === "function") await externalProvider.disconnect(); } catch {}
+      try { if (externalProvider && externalProvider.close) await externalProvider.close(); } catch {}
 
       externalProvider = null;
       provider = null;
@@ -947,19 +764,12 @@
     connectBtn.addEventListener("click", () => connectWallet(true));
     disconnectBtn.addEventListener("click", () => disconnectWallet());
 
-    // Auto-reconnect si había cachedProvider
     (async () => {
-      if (web3Modal?.cachedProvider) {
-        await connectWallet(false);
-      } else {
-        refreshWalletUi();
-        refreshNetworkUi();
-      }
+      if (web3Modal?.cachedProvider) await connectWallet(false);
+      else { refreshWalletUi(); refreshNetworkUi(); }
     })();
 
-    // =========================
-    // Precio BNB/USD + estimación (frontend)
-    // =========================
+    // Estimación BNB/USD
     let lastPriceUsd1e6 = null;
     let cachedBnbUsd = null;
     let cachedBnbUsdAt = 0;
@@ -968,7 +778,6 @@
       const now = Date.now();
       if (cachedBnbUsd && (now - cachedBnbUsdAt) < 30000) return cachedBnbUsd;
 
-      // Binance (BNBUSDT)
       try {
         const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT", { cache: "no-store" });
         if (r.ok) {
@@ -978,7 +787,6 @@
         }
       } catch {}
 
-      // CoinGecko fallback
       try {
         const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd", { cache: "no-store" });
         if (r.ok) {
@@ -1006,7 +814,7 @@
       if (!lastPriceUsd1e6) {
         estUsdText.textContent = "—";
         estEliteText.textContent = "—";
-        estNote.textContent = T[lang].estPriceMissing;
+        estNote.textContent = "Aún no hay precio de etapa. Espera un momento.";
         return;
       }
 
@@ -1014,42 +822,31 @@
       if (!raw || Number(raw) <= 0) {
         estUsdText.textContent = "—";
         estEliteText.textContent = "—";
-        estNote.textContent = T[lang].estNeedAmount;
+        estNote.textContent = "Ingresa un monto para estimar.";
         return;
       }
 
       const currency = paySelect.value;
       const amount = Number(raw);
-
-      const priceUsd = Number(lastPriceUsd1e6) / 1e6; // USD por 1 ELITE
-      if (!isFinite(priceUsd) || priceUsd <= 0) {
-        estUsdText.textContent = "—";
-        estEliteText.textContent = "—";
-        estNote.textContent = T[lang].estPriceMissing;
-        return;
-      }
+      const priceUsd = Number(lastPriceUsd1e6) / 1e6; // USD por ELITE
 
       try {
         let usd = 0;
         if (currency === "BNB") {
           const bnbUsd = await fetchBnbUsd();
           usd = amount * bnbUsd;
-          estNote.textContent = T[lang].estBnbNote + ` (1 BNB ≈ ${fmtUsd(bnbUsd)})`;
+          estNote.textContent = "Estimación usando BNB/USD (aprox).";
         } else {
-          usd = amount; // USDT/USDC ≈ 1 USD
-          estNote.textContent = T[lang].estStableNote;
+          usd = amount;
+          estNote.textContent = "Estimación usando stablecoin (≈ 1 USD).";
         }
-
         const elite = usd / priceUsd;
         estUsdText.textContent = fmtUsd(usd);
         estEliteText.textContent = fmtEliteNumber(elite);
-      } catch (e) {
-        console.error("estimate error", e);
+      } catch {
         estUsdText.textContent = "—";
         estEliteText.textContent = "—";
-        estNote.textContent = (lang === "es")
-          ? "No se pudo obtener BNB/USD para estimar. Prueba con USDT/USDC."
-          : "Could not fetch BNB/USD to estimate. Try USDT/USDC.";
+        estNote.textContent = "No se pudo obtener BNB/USD. Prueba con USDT/USDC.";
       }
     }
 
@@ -1059,9 +856,7 @@
       window.__est_t = setTimeout(updateEstimate, 250);
     });
 
-    // =========================
-    // Progress (read-only)
-    // =========================
+    // Progress
     let lastStageNumber = 1;
 
     async function refreshProgress() {
@@ -1111,9 +906,7 @@
     setInterval(async () => { await refreshProgress(); refreshCountdown(); }, 15000);
     setInterval(refreshCountdown, 1000);
 
-    // =========================
     // Modales
-    // =========================
     function openModal() { modalBackdrop.style.display = "flex"; updateEstimate(); refreshNetworkUi(); refreshWalletUi(); }
     function closeModalFn() {
       modalBackdrop.style.display = "none";
@@ -1128,15 +921,11 @@
     closeModal.addEventListener("click", closeModalFn);
     modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) closeModalFn(); });
 
-    function openTokenomics() { tokenomicsBackdrop.style.display = "flex"; }
-    function closeTokenomicsFn() { tokenomicsBackdrop.style.display = "none"; }
-    tokenomicsBtn.addEventListener("click", openTokenomics);
-    closeTokenomics.addEventListener("click", closeTokenomicsFn);
-    tokenomicsBackdrop.addEventListener("click", (e) => { if (e.target === tokenomicsBackdrop) closeTokenomicsFn(); });
+    tokenomicsBtn.addEventListener("click", () => tokenomicsBackdrop.style.display = "flex");
+    closeTokenomics.addEventListener("click", () => tokenomicsBackdrop.style.display = "none");
+    tokenomicsBackdrop.addEventListener("click", (e) => { if (e.target === tokenomicsBackdrop) tokenomicsBackdrop.style.display = "none"; });
 
-    // =========================
-    // My stats + Claim state
-    // =========================
+    // Stats
     async function refreshMyStats() {
       if (!presaleWrite || !account) {
         myEliteText.textContent = "0 ELITE";
@@ -1158,51 +947,41 @@
 
       if (isFinalized && isClaimEnabled && !isClaimed && elite.gt(0)) {
         claimBtn.disabled = false;
-        claimNote.textContent = (lang === "es")
-          ? "Claim disponible: puedes retirar tus ELITE."
-          : "Claim available: you can claim your ELITE.";
+        claimNote.textContent = "Claim disponible: puedes retirar tus ELITE.";
       } else if (isFinalized && !isClaimEnabled) {
         claimBtn.disabled = true;
-        claimNote.textContent = (lang === "es")
-          ? "La preventa terminó, pero el claim aún no está habilitado."
-          : "Presale ended, but claim is not enabled yet.";
+        claimNote.textContent = "La preventa terminó, pero el claim aún no está habilitado.";
       } else if (isClaimed) {
         claimBtn.disabled = true;
-        claimNote.textContent = (lang === "es") ? "Ya hiciste claim." : "Already claimed.";
+        claimNote.textContent = "Ya hiciste claim.";
       } else {
         claimBtn.disabled = true;
         claimNote.textContent = "";
       }
     }
 
-    // =========================
     // Buy
-    // =========================
     async function buy() {
       if (!account || !presaleWrite) {
         await connectWallet(true);
         if (!account || !presaleWrite) return;
       }
 
-      // Check chain
       const cid = await getChainIdSafe(externalProvider);
       if (cid !== null && cid !== BSC_CHAIN_ID) {
-        alert(T[lang].switchWarn);
+        alert("Cambia a BNB Smart Chain para comprar.");
         return;
       }
 
       const currency = paySelect.value;
       const raw = (amountInput.value || "").trim();
-      if (!raw || Number(raw) <= 0) {
-        alert(lang === "es" ? "Ingresa un monto." : "Enter an amount.");
-        return;
-      }
+      if (!raw || Number(raw) <= 0) { alert("Ingresa un monto."); return; }
 
       txNote.textContent = "";
 
       if (currency === "BNB") {
         const tx = await presaleWrite.buyWithBNB({ value: ethers.utils.parseEther(raw) });
-        txNote.innerHTML = `${lang === "es" ? "Transacción enviada:" : "Transaction sent:"} <a href="${EXPLORER_TX + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        txNote.innerHTML = `Transacción enviada: <a href="${EXPLORER_TX + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
         await tx.wait();
       } else {
         const tokenAddr = currency === "USDT" ? USDT_ADDRESS : USDC_ADDRESS;
@@ -1212,11 +991,11 @@
         const amt = ethers.utils.parseUnits(raw, dec);
 
         const tx1 = await token.approve(PRESALE_ADDRESS, amt);
-        txNote.innerHTML = `${lang === "es" ? "Approve enviado:" : "Approve sent:"} <a href="${EXPLORER_TX + tx1.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        txNote.innerHTML = `Approve enviado: <a href="${EXPLORER_TX + tx1.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
         await tx1.wait();
 
         const tx2 = await presaleWrite.buyWithStable(tokenAddr, amt);
-        txNote.innerHTML = `${lang === "es" ? "Compra enviada:" : "Purchase sent:"} <a href="${EXPLORER_TX + tx2.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        txNote.innerHTML = `Compra enviada: <a href="${EXPLORER_TX + tx2.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
         await tx2.wait();
       }
 
@@ -1226,57 +1005,42 @@
       amountInput.value = "";
       updateEstimate();
     }
-
     buyBtn.addEventListener("click", async () => {
       try { await buy(); }
-      catch (e) {
-        console.error(e);
-        alert("Error: " + (e?.reason || e?.message || e));
-      }
+      catch (e) { console.error(e); alert("Error: " + (e?.reason || e?.message || e)); }
     });
 
-    // =========================
     // Claim
-    // =========================
     async function claim() {
       if (!account || !presaleWrite) {
         await connectWallet(true);
         if (!account || !presaleWrite) return;
       }
 
-      // Check chain
       const cid = await getChainIdSafe(externalProvider);
       if (cid !== null && cid !== BSC_CHAIN_ID) {
-        alert(T[lang].switchWarn);
+        alert("Cambia a BNB Smart Chain para hacer claim.");
         return;
       }
 
       claimBtn.disabled = true;
-      claimNote.textContent = (lang === "es") ? "Enviando claim..." : "Sending claim...";
+      claimNote.textContent = "Enviando claim...";
 
       const tx = await presaleWrite.claim();
-      txNote.innerHTML = `${lang === "es" ? "Claim enviado:" : "Claim sent:"} <a href="${EXPLORER_TX + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+      txNote.innerHTML = `Claim enviado: <a href="${EXPLORER_TX + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
       await tx.wait();
 
       await refreshMyStats();
-      claimNote.textContent = (lang === "es") ? "Claim completado ✅" : "Claim completed ✅";
+      claimNote.textContent = "Claim completado ✅";
     }
-
     claimBtn.addEventListener("click", async () => {
       try { await claim(); }
-      catch (e) {
-        console.error(e);
-        claimNote.textContent = "";
-        alert("Error: " + (e?.reason || e?.message || e));
-      }
+      catch (e) { console.error(e); claimNote.textContent = ""; alert("Error: " + (e?.reason || e?.message || e)); }
     });
 
-    // =========================
-    // Click puro: abre modal + abre selector multiwallet
-    // =========================
+    // Click puro: abre modal + selector si no hay cuenta
     cigarHotspot.addEventListener("click", async () => {
       openModal();
-      // abre selector SI no hay cuenta conectada
       if (!account) await connectWallet(true);
     });
   </script>
