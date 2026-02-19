@@ -133,6 +133,7 @@
       padding: 18px;
       box-sizing: border-box;
       z-index: 9999;
+      isolation: auto;
     }
     .modal {
       width: 100%;
@@ -217,12 +218,34 @@
     .tok-table th { color:#fff; background:#111; }
     .tok-table tr:last-child td { border-bottom:none; }
 
-    /* ================================
-       FIX: Web3Modal por encima del modal
-       ================================ */
+    /* ==========================================
+       FIX DEFINITIVO: Web3Modal + WalletConnect
+       SIEMPRE arriba del modal (z-index: 9999)
+       ========================================== */
+
+    /* Web3Modal v1 (ID típico) */
+    #WEB3_CONNECT_MODAL {
+      position: fixed !important;
+      z-index: 30000 !important;
+    }
+    #WEB3_CONNECT_MODAL * {
+      z-index: 30000 !important;
+    }
+
+    /* Otras clases posibles Web3Modal */
     .web3modal-modal,
-    .web3modal-overlay {
-      z-index: 20000 !important;
+    .web3modal-overlay,
+    .web3modal-provider-wrapper,
+    .web3modal-provider-container {
+      z-index: 30000 !important;
+    }
+
+    /* WalletConnect v1 QR modal */
+    .walletconnect-modal,
+    .walletconnect-qrcode__modal,
+    .walletconnect-qrcode__base,
+    .walletconnect-modal__base {
+      z-index: 40000 !important;
     }
   </style>
 
@@ -432,14 +455,10 @@
   </div>
 
   <script>
-    // ---- Guards ----
     if (typeof ethers === "undefined") { alert("No se pudo cargar ethers.js"); throw new Error("ethers_not_loaded"); }
     if (typeof Web3Modal === "undefined") { alert("No se pudo cargar Web3Modal"); throw new Error("web3modal_not_loaded"); }
     if (typeof WalletConnectProvider === "undefined") { alert("No se pudo cargar WalletConnectProvider"); throw new Error("wc_not_loaded"); }
 
-    // =========================
-    // CONFIG
-    // =========================
     const PRESALE_ADDRESS = "0xccc6f2BE50a0c5b26Ac0a4d4A998F860e8c3A2aE";
     const USDT_ADDRESS = "0x55d398326f99059ff775485246999027b3197955";
     const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
@@ -449,7 +468,6 @@
 
     const TOTAL_PRESALE_TOKENS_WEI = ethers.BigNumber.from("30000000").mul(ethers.BigNumber.from("10").pow(18));
 
-    // Fechas
     const PRESALE_START_MS = new Date("2026-02-13T00:00:00Z").getTime();
     const DAY = 24 * 60 * 60 * 1000;
     const STAGE1_DAYS = 7, STAGE2_DAYS = 7, STAGE3_DAYS = 14;
@@ -460,7 +478,6 @@
     };
     const PRESALE_END_MS = STAGE_END_MS[3];
 
-    // BSC chain
     const BSC_CHAIN_ID = 56;
     const BSC_CHAIN_ID_HEX = "0x38";
     const BSC_PARAMS = {
@@ -471,7 +488,6 @@
       blockExplorerUrls: ["https://bscscan.com/"]
     };
 
-    // ABI
     const PRESALE_ABI = [
       "function buyWithBNB() payable",
       "function buyWithStable(address token, uint256 amount)",
@@ -489,18 +505,7 @@
       "function approve(address spender, uint256 amount) returns (bool)"
     ];
 
-    // =========================
-    // UI refs
-    // =========================
     const cigarHotspot = document.getElementById("cigarHotspot");
-    const hintText = document.getElementById("hintText");
-    const langBtn = document.getElementById("langBtn");
-
-    const stageLabel = document.getElementById("stageLabel");
-    const priceLabel = document.getElementById("priceLabel");
-    const soldLabel = document.getElementById("soldLabel");
-    const totalLabel = document.getElementById("totalLabel");
-
     const stageText = document.getElementById("stageText");
     const priceText = document.getElementById("priceText");
     const progressTotal = document.getElementById("progressTotal");
@@ -509,14 +514,10 @@
     const pctText = document.getElementById("pctText");
 
     const progressStage = document.getElementById("progressStage");
-    const stageRemainLabel = document.getElementById("stageRemainLabel");
     const stageRemainText = document.getElementById("stageRemainText");
-    const stagePctLabel = document.getElementById("stagePctLabel");
     const stagePctText = document.getElementById("stagePctText");
 
-    const stageEndsLabel = document.getElementById("stageEndsLabel");
     const stageEndsText = document.getElementById("stageEndsText");
-    const presaleEndsLabel = document.getElementById("presaleEndsLabel");
     const presaleEndsText = document.getElementById("presaleEndsText");
 
     const netText = document.getElementById("netText");
@@ -551,22 +552,6 @@
     const txNote = document.getElementById("txNote");
     const claimNote = document.getElementById("claimNote");
 
-    totalText.textContent = (30_000_000).toLocaleString("es-CL");
-    presaleAddrShort.textContent = shortAddr(PRESALE_ADDRESS);
-    presaleLink.href = EXPLORER_ADDR + PRESALE_ADDRESS;
-
-    // Copy
-    copyAddrBtn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(PRESALE_ADDRESS);
-        copyAddrBtn.textContent = "✅ Copiado";
-        setTimeout(() => (copyAddrBtn.textContent = "Copiar"), 1200);
-      } catch {
-        alert("Copia manual: " + PRESALE_ADDRESS);
-      }
-    });
-
-    // Helpers
     function shortAddr(a) { return a ? a.slice(0,6) + "..." + a.slice(-4) : ""; }
     function clampPct(x) { return Math.max(0, Math.min(100, x)); }
     function fmtTokenWhole(weiBn) {
@@ -608,11 +593,23 @@
       return `${d}d ${pad(h)}:${pad(m)}:${pad(s)}`;
     }
 
-    // Read provider
+    totalText.textContent = (30_000_000).toLocaleString("es-CL");
+    presaleAddrShort.textContent = shortAddr(PRESALE_ADDRESS);
+    presaleLink.href = EXPLORER_ADDR + PRESALE_ADDRESS;
+
+    copyAddrBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(PRESALE_ADDRESS);
+        copyAddrBtn.textContent = "✅ Copiado";
+        setTimeout(() => (copyAddrBtn.textContent = "Copiar"), 1200);
+      } catch {
+        alert("Copia manual: " + PRESALE_ADDRESS);
+      }
+    });
+
     const readProvider = new ethers.providers.JsonRpcProvider(RPC);
     const presaleRead = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, readProvider);
 
-    // Web3Modal
     let web3Modal = null;
     let externalProvider = null;
     let provider = null;
@@ -769,7 +766,6 @@
       else { refreshWalletUi(); refreshNetworkUi(); }
     })();
 
-    // Estimación BNB/USD
     let lastPriceUsd1e6 = null;
     let cachedBnbUsd = null;
     let cachedBnbUsdAt = 0;
@@ -828,7 +824,7 @@
 
       const currency = paySelect.value;
       const amount = Number(raw);
-      const priceUsd = Number(lastPriceUsd1e6) / 1e6; // USD por ELITE
+      const priceUsd = Number(lastPriceUsd1e6) / 1e6;
 
       try {
         let usd = 0;
@@ -856,7 +852,6 @@
       window.__est_t = setTimeout(updateEstimate, 250);
     });
 
-    // Progress
     let lastStageNumber = 1;
 
     async function refreshProgress() {
@@ -906,7 +901,6 @@
     setInterval(async () => { await refreshProgress(); refreshCountdown(); }, 15000);
     setInterval(refreshCountdown, 1000);
 
-    // Modales
     function openModal() { modalBackdrop.style.display = "flex"; updateEstimate(); refreshNetworkUi(); refreshWalletUi(); }
     function closeModalFn() {
       modalBackdrop.style.display = "none";
@@ -925,7 +919,6 @@
     closeTokenomics.addEventListener("click", () => tokenomicsBackdrop.style.display = "none");
     tokenomicsBackdrop.addEventListener("click", (e) => { if (e.target === tokenomicsBackdrop) tokenomicsBackdrop.style.display = "none"; });
 
-    // Stats
     async function refreshMyStats() {
       if (!presaleWrite || !account) {
         myEliteText.textContent = "0 ELITE";
@@ -960,7 +953,6 @@
       }
     }
 
-    // Buy
     async function buy() {
       if (!account || !presaleWrite) {
         await connectWallet(true);
@@ -968,10 +960,7 @@
       }
 
       const cid = await getChainIdSafe(externalProvider);
-      if (cid !== null && cid !== BSC_CHAIN_ID) {
-        alert("Cambia a BNB Smart Chain para comprar.");
-        return;
-      }
+      if (cid !== null && cid !== BSC_CHAIN_ID) { alert("Cambia a BNB Smart Chain para comprar."); return; }
 
       const currency = paySelect.value;
       const raw = (amountInput.value || "").trim();
@@ -985,7 +974,6 @@
         await tx.wait();
       } else {
         const tokenAddr = currency === "USDT" ? USDT_ADDRESS : USDC_ADDRESS;
-
         const token = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
         const dec = await token.decimals();
         const amt = ethers.utils.parseUnits(raw, dec);
@@ -1010,7 +998,6 @@
       catch (e) { console.error(e); alert("Error: " + (e?.reason || e?.message || e)); }
     });
 
-    // Claim
     async function claim() {
       if (!account || !presaleWrite) {
         await connectWallet(true);
@@ -1018,10 +1005,7 @@
       }
 
       const cid = await getChainIdSafe(externalProvider);
-      if (cid !== null && cid !== BSC_CHAIN_ID) {
-        alert("Cambia a BNB Smart Chain para hacer claim.");
-        return;
-      }
+      if (cid !== null && cid !== BSC_CHAIN_ID) { alert("Cambia a BNB Smart Chain para hacer claim."); return; }
 
       claimBtn.disabled = true;
       claimNote.textContent = "Enviando claim...";
@@ -1038,7 +1022,6 @@
       catch (e) { console.error(e); claimNote.textContent = ""; alert("Error: " + (e?.reason || e?.message || e)); }
     });
 
-    // Click puro: abre modal + selector si no hay cuenta
     cigarHotspot.addEventListener("click", async () => {
       openModal();
       if (!account) await connectWallet(true);
