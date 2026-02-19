@@ -19,10 +19,8 @@
       display:block;
       user-select:none;
       -webkit-tap-highlight-color: transparent;
-      pointer-events: none; /* click solo en el hotspot */
+      pointer-events: none;
     }
-
-    /* Hotspot del puro */
     .cigar-hotspot {
       position: absolute;
       left: 60%;
@@ -48,6 +46,7 @@
       text-align:left;
       position: relative;
     }
+
     .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
     .pill { display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; background:#111; border:1px solid #222; white-space:nowrap; }
     .muted { color:#bdbdbd; }
@@ -111,6 +110,17 @@
       letter-spacing: 0.5px;
     }
     .tokenomics-btn:hover { filter: brightness(0.92); }
+
+    .chip-btn {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background:#111;
+      border:1px solid #222;
+      color:#fff;
+      cursor:pointer;
+      font-weight:700;
+    }
+    .chip-btn:hover { filter: brightness(0.92); }
 
     /* Modal */
     .modal-backdrop {
@@ -228,6 +238,18 @@
         <div class="row" style="justify-content:center;">
           <span class="pill"><span class="muted" id="stageLabel">Etapa:</span> <span id="stageText" class="big">—</span></span>
           <span class="pill"><span class="muted" id="priceLabel">Precio:</span> <span id="priceText" class="big">—</span></span>
+        </div>
+
+        <!-- NUEVO: red + dirección -->
+        <div class="subline" style="margin-top:12px;">
+          <span class="pill"><span class="muted" id="netLabel">Red:</span> <span id="netText" class="big">—</span></span>
+          <span class="pill"><span class="muted" id="addrLabel">Preventa:</span> <span id="presaleAddrShort" class="big">—</span></span>
+        </div>
+        <div class="subline" style="margin-top:8px;">
+          <button class="chip-btn" id="copyAddrBtn">Copiar</button>
+          <a id="presaleLink" target="_blank" rel="noreferrer" class="chip-btn" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">
+            BscScan
+          </a>
         </div>
 
         <!-- Progreso total -->
@@ -427,7 +449,6 @@
   </div>
 
   <script>
-    // ---- Guard por si ethers falla ----
     if (typeof ethers === "undefined") {
       alert("No se pudo cargar ethers.js. Revisa tu conexión o CDN.");
       throw new Error("ethers_not_loaded");
@@ -439,15 +460,13 @@
     const PRESALE_ADDRESS = "0xccc6f2BE50a0c5b26Ac0a4d4A998F860e8c3A2aE";
     const USDT_ADDRESS = "0x55d398326f99059ff775485246999027b3197955";
     const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
-    const EXPLORER_BASE = "https://bscscan.com/tx/";
+    const EXPLORER_TX = "https://bscscan.com/tx/";
+    const EXPLORER_ADDR = "https://bscscan.com/address/";
     const RPC = "https://bsc-dataseed.binance.org/";
 
-    // Total preventa: 30,000,000 ELITE (18 dec)
     const TOTAL_PRESALE_TOKENS_WEI = ethers.BigNumber.from("30000000").mul(ethers.BigNumber.from("10").pow(18));
 
-    // =========================
-    // FECHAS (7 / 7 / 14 días) — inicio fijo
-    // =========================
+    // Fechas (front-only)
     const PRESALE_START_MS = new Date("2026-02-13T00:00:00Z").getTime();
     const DAY = 24 * 60 * 60 * 1000;
     const STAGE1_DAYS = 7;
@@ -459,12 +478,9 @@
       2: PRESALE_START_MS + ((STAGE1_DAYS + STAGE2_DAYS) * DAY),
       3: PRESALE_START_MS + ((STAGE1_DAYS + STAGE2_DAYS + STAGE3_DAYS) * DAY),
     };
-
     const PRESALE_END_MS = STAGE_END_MS[3];
 
-    // =========================
     // BSC
-    // =========================
     const BSC_CHAIN_ID_HEX = "0x38";
     const BSC_PARAMS = {
       chainId: BSC_CHAIN_ID_HEX,
@@ -474,9 +490,7 @@
       blockExplorerUrls: ["https://bscscan.com/"]
     };
 
-    // =========================
     // ABI
-    // =========================
     const PRESALE_ABI = [
       "function buyWithBNB() payable",
       "function buyWithStable(address token, uint256 amount)",
@@ -499,7 +513,6 @@
     // UI refs
     // =========================
     const cigarHotspot = document.getElementById("cigarHotspot");
-
     const hintText = document.getElementById("hintText");
     const langBtn = document.getElementById("langBtn");
 
@@ -525,6 +538,14 @@
     const stageEndsText = document.getElementById("stageEndsText");
     const presaleEndsLabel = document.getElementById("presaleEndsLabel");
     const presaleEndsText = document.getElementById("presaleEndsText");
+
+    // NUEVO: red + dirección
+    const netLabel = document.getElementById("netLabel");
+    const netText = document.getElementById("netText");
+    const addrLabel = document.getElementById("addrLabel");
+    const presaleAddrShort = document.getElementById("presaleAddrShort");
+    const copyAddrBtn = document.getElementById("copyAddrBtn");
+    const presaleLink = document.getElementById("presaleLink");
 
     const tokenomicsBtn = document.getElementById("tokenomicsBtn");
     const tokenomicsBackdrop = document.getElementById("tokenomicsBackdrop");
@@ -559,6 +580,8 @@
     const claimNote = document.getElementById("claimNote");
 
     totalText.textContent = (30_000_000).toLocaleString("es-CL");
+    presaleAddrShort.textContent = "—";
+    presaleLink.href = EXPLORER_ADDR + PRESALE_ADDRESS;
 
     // =========================
     // i18n
@@ -591,7 +614,13 @@
         estBnbNote: "Estimación usando precio BNB/USD (aprox).",
         estStableNote: "Estimación usando stablecoin (≈ 1 USD).",
         estNeedAmount: "Ingresa un monto para estimar.",
-        estPriceMissing: "Aún no hay precio de etapa. Espera un momento y reintenta."
+        estPriceMissing: "Aún no hay precio de etapa. Espera un momento y reintenta.",
+        net: "Red:",
+        presale: "Preventa:",
+        netOk: "BNB Chain ✅",
+        netWrong: "Cambia a BNB Chain ⚠️",
+        copy: "Copiar",
+        copied: "✅ Copiado"
       },
       en: {
         hint: "Tap the cigar to buy",
@@ -619,7 +648,13 @@
         estBnbNote: "Estimated using BNB/USD price (approx).",
         estStableNote: "Estimated using stablecoin (≈ 1 USD).",
         estNeedAmount: "Enter an amount to estimate.",
-        estPriceMissing: "Stage price not loaded yet. Wait a moment and try again."
+        estPriceMissing: "Stage price not loaded yet. Wait a moment and try again.",
+        net: "Network:",
+        presale: "Presale:",
+        netOk: "BNB Chain ✅",
+        netWrong: "Switch to BNB Chain ⚠️",
+        copy: "Copy",
+        copied: "✅ Copied"
       }
     };
 
@@ -646,6 +681,10 @@
       estUsdLabel.textContent = t.estUsd;
       estEliteLabel.textContent = t.estElite;
 
+      netLabel.textContent = t.net;
+      addrLabel.textContent = t.presale;
+      copyAddrBtn.textContent = t.copy;
+
       langBtn.textContent = (lang === "es") ? "EN" : "ES";
       amountInput.placeholder = (lang === "es") ? "Monto a invertir" : "Amount to invest";
     }
@@ -655,6 +694,7 @@
       applyLang();
       refreshCountdown();
       updateEstimate();
+      refreshNetworkUi();
     });
 
     applyLang();
@@ -713,10 +753,25 @@
       }
     }
 
+    function refreshNetworkUi() {
+      // Si no hay ethereum, mostramos warning pero sin romper
+      if (!window.ethereum) {
+        netText.textContent = (lang === "es") ? "MetaMask no detectado ⚠️" : "MetaMask not detected ⚠️";
+        return;
+      }
+      window.ethereum.request({ method: "eth_chainId" })
+        .then((cid) => {
+          netText.textContent = (cid === BSC_CHAIN_ID_HEX) ? T[lang].netOk : T[lang].netWrong;
+        })
+        .catch(() => {
+          netText.textContent = (lang === "es") ? "—" : "—";
+        });
+    }
+
     // =========================
     // Precio BNB/USD + estimación (frontend)
     // =========================
-    let lastPriceUsd1e6 = null; // desde currentStage()
+    let lastPriceUsd1e6 = null;
     let cachedBnbUsd = null;
     let cachedBnbUsdAt = 0;
 
@@ -734,7 +789,7 @@
       const now = Date.now();
       if (cachedBnbUsd && (now - cachedBnbUsdAt) < 30000) return cachedBnbUsd;
 
-      // Fuente 1: Binance (BNBUSDT)
+      // Binance (BNBUSDT)
       try {
         const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT", { cache: "no-store" });
         if (r.ok) {
@@ -747,7 +802,7 @@
         }
       } catch {}
 
-      // Fuente 2: CoinGecko
+      // CoinGecko
       try {
         const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd", { cache: "no-store" });
         if (r.ok) {
@@ -773,7 +828,6 @@
     }
 
     async function updateEstimate() {
-      // Siempre intenta mostrar el BNB/USD
       await refreshBnbUsdUi();
 
       if (!lastPriceUsd1e6) {
@@ -794,7 +848,7 @@
       const currency = paySelect.value;
       const amount = Number(raw);
 
-      const priceUsd = Number(lastPriceUsd1e6) / 1e6; // USD por 1 ELITE
+      const priceUsd = Number(lastPriceUsd1e6) / 1e6;
       if (!isFinite(priceUsd) || priceUsd <= 0) {
         estUsdText.textContent = "—";
         estEliteText.textContent = "—";
@@ -828,11 +882,22 @@
       }
     }
 
-    // Listeners para recalcular
     paySelect.addEventListener("change", () => updateEstimate());
     amountInput.addEventListener("input", () => {
       clearTimeout(window.__est_t);
       window.__est_t = setTimeout(updateEstimate, 250);
+    });
+
+    // Copiar dirección
+    presaleAddrShort.textContent = shortAddr(PRESALE_ADDRESS);
+    copyAddrBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(PRESALE_ADDRESS);
+        copyAddrBtn.textContent = T[lang].copied;
+        setTimeout(() => (copyAddrBtn.textContent = T[lang].copy), 1200);
+      } catch {
+        alert((lang === "es" ? "Copia manual:" : "Copy manually: ") + " " + PRESALE_ADDRESS);
+      }
     });
 
     // =========================
@@ -854,7 +919,6 @@
         stageText.textContent = `Stage ${stageNum} / 3`;
         priceText.textContent = fmtUsdPriceFromMicro(st.priceUsd1e6);
 
-        // Guardamos precio etapa para estimaciones
         lastPriceUsd1e6 = st.priceUsd1e6;
         updateEstimate();
 
@@ -887,16 +951,17 @@
       presaleEndsText.textContent = formatCountdown(PRESALE_END_MS - now);
     }
 
-    refreshProgress().then(refreshCountdown);
-    setInterval(async () => { await refreshProgress(); refreshCountdown(); }, 15000);
+    refreshProgress().then(() => { refreshCountdown(); refreshNetworkUi(); });
+    setInterval(async () => { await refreshProgress(); refreshCountdown(); refreshNetworkUi(); }, 15000);
     setInterval(refreshCountdown, 1000);
 
     // =========================
-    // Modales: open/close
+    // Modales
     // =========================
     function openModal() {
       modalBackdrop.style.display = "flex";
       updateEstimate();
+      refreshNetworkUi();
     }
     function closeModalFn() {
       modalBackdrop.style.display = "none";
@@ -907,7 +972,6 @@
       buyBtn.disabled = true;
       claimBtn.disabled = true;
 
-      // reset estimación
       bnbUsdText.textContent = "—";
       estUsdText.textContent = "—";
       estEliteText.textContent = "—";
@@ -984,6 +1048,7 @@
       buyBtn.disabled = false;
 
       await refreshMyStats();
+      refreshNetworkUi();
     }
 
     // =========================
@@ -1006,7 +1071,7 @@
 
       if (currency === "BNB") {
         const tx = await presaleWrite.buyWithBNB({ value: ethers.utils.parseEther(raw) });
-        txNote.innerHTML = `${lang === "es" ? "Transacción enviada:" : "Transaction sent:"} <a href="${EXPLORER_BASE + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        txNote.innerHTML = `${lang === "es" ? "Transacción enviada:" : "Transaction sent:"} <a href="${EXPLORER_TX + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
         await tx.wait();
       } else {
         const tokenAddr = currency === "USDT" ? USDT_ADDRESS : USDC_ADDRESS;
@@ -1016,11 +1081,11 @@
         const amt = ethers.utils.parseUnits(raw, dec);
 
         const tx1 = await token.approve(PRESALE_ADDRESS, amt);
-        txNote.innerHTML = `${lang === "es" ? "Approve enviado:" : "Approve sent:"} <a href="${EXPLORER_BASE + tx1.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        txNote.innerHTML = `${lang === "es" ? "Approve enviado:" : "Approve sent:"} <a href="${EXPLORER_TX + tx1.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
         await tx1.wait();
 
         const tx2 = await presaleWrite.buyWithStable(tokenAddr, amt);
-        txNote.innerHTML = `${lang === "es" ? "Compra enviada:" : "Purchase sent:"} <a href="${EXPLORER_BASE + tx2.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        txNote.innerHTML = `${lang === "es" ? "Compra enviada:" : "Purchase sent:"} <a href="${EXPLORER_TX + tx2.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
         await tx2.wait();
       }
 
@@ -1050,7 +1115,7 @@
       claimBtn.disabled = true;
       claimNote.textContent = (lang === "es") ? "Enviando claim..." : "Sending claim...";
       const tx = await presaleWrite.claim();
-      txNote.innerHTML = `${lang === "es" ? "Claim enviado:" : "Claim sent:"} <a href="${EXPLORER_BASE + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+      txNote.innerHTML = `${lang === "es" ? "Claim enviado:" : "Claim sent:"} <a href="${EXPLORER_TX + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
       await tx.wait();
       await refreshMyStats();
       claimNote.textContent = (lang === "es") ? "Claim completado ✅" : "Claim completed ✅";
