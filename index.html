@@ -11,7 +11,16 @@
     .stack { width:100%; max-width:560px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; }
 
     .logo-wrap { position: relative; width: min(70vw, 420px); }
-    .logo-img { width: 100%; height: auto; display:block; user-select:none; -webkit-tap-highlight-color: transparent; }
+    .logo-img {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: auto;
+      display:block;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      pointer-events: none; /* click solo en el hotspot */
+    }
 
     /* Hotspot del puro */
     .cigar-hotspot {
@@ -23,6 +32,8 @@
       cursor: pointer;
       background: rgba(255,255,255,0.0);
       border-radius: 18px;
+      z-index: 5;
+      pointer-events: auto;
     }
 
     .hint { font-size:0.88rem; color:#cfcfcf; margin-top:-6px; }
@@ -246,7 +257,7 @@
           <span class="pill"><span class="muted" id="presaleEndsLabel">Termina preventa:</span> <span id="presaleEndsText" class="big">—</span></span>
         </div>
 
-        <!-- NUEVO: Tokenomics -->
+        <!-- Tokenomics -->
         <button class="tokenomics-btn" id="tokenomicsBtn">TOKENOMICS</button>
       </div>
 
@@ -280,6 +291,27 @@
         <input id="amountInput" type="number" min="0" step="0.000001" placeholder="Monto a invertir" style="flex:1;" />
         <button id="buyBtn" disabled>Comprar</button>
       </div>
+
+      <!-- Precio BNB/USD -->
+      <div class="row" style="margin-top:12px; justify-content:center;">
+        <span class="pill">
+          <span class="muted" id="bnbUsdLabel">BNB/USD:</span>
+          <span id="bnbUsdText" class="big">—</span>
+        </span>
+      </div>
+
+      <!-- Estimación -->
+      <div class="row" style="margin-top:10px; justify-content:center;">
+        <span class="pill">
+          <span class="muted" id="estUsdLabel">USD estimado:</span>
+          <span id="estUsdText" class="big">—</span>
+        </span>
+        <span class="pill">
+          <span class="muted" id="estEliteLabel">Tokens a reclamar:</span>
+          <span id="estEliteText" class="big">—</span>
+        </span>
+      </div>
+      <div class="note" id="estNote"></div>
 
       <div class="btnrow">
         <button id="claimBtn" class="btn-secondary" disabled>CLAIM</button>
@@ -395,8 +427,14 @@
   </div>
 
   <script>
+    // ---- Guard por si ethers falla ----
+    if (typeof ethers === "undefined") {
+      alert("No se pudo cargar ethers.js. Revisa tu conexión o CDN.");
+      throw new Error("ethers_not_loaded");
+    }
+
     // =========================
-    // CONFIG (tus contratos reales)
+    // CONFIG
     // =========================
     const PRESALE_ADDRESS = "0xccc6f2BE50a0c5b26Ac0a4d4A998F860e8c3A2aE";
     const USDT_ADDRESS = "0x55d398326f99059ff775485246999027b3197955";
@@ -409,7 +447,6 @@
 
     // =========================
     // FECHAS (7 / 7 / 14 días) — inicio fijo
-    // Cambia SOLO esta fecha si quieres otro inicio.
     // =========================
     const PRESALE_START_MS = new Date("2026-02-13T00:00:00Z").getTime();
     const DAY = 24 * 60 * 60 * 1000;
@@ -508,6 +545,15 @@
     const amountInput = document.getElementById("amountInput");
     const buyBtn = document.getElementById("buyBtn");
 
+    const bnbUsdLabel = document.getElementById("bnbUsdLabel");
+    const bnbUsdText  = document.getElementById("bnbUsdText");
+
+    const estUsdLabel = document.getElementById("estUsdLabel");
+    const estUsdText  = document.getElementById("estUsdText");
+    const estEliteLabel = document.getElementById("estEliteLabel");
+    const estEliteText  = document.getElementById("estEliteText");
+    const estNote = document.getElementById("estNote");
+
     const claimBtn = document.getElementById("claimBtn");
     const txNote = document.getElementById("txNote");
     const claimNote = document.getElementById("claimNote");
@@ -515,7 +561,7 @@
     totalText.textContent = (30_000_000).toLocaleString("es-CL");
 
     // =========================
-    // i18n (ES/EN para UI principal, tokenomics queda en ES por ahora)
+    // i18n
     // =========================
     let lang = "es";
     const T = {
@@ -538,7 +584,14 @@
         claim: "CLAIM",
         connecting: "Conectando...",
         ended: "Finalizado",
-        connected: "Conectado: "
+        connected: "Conectado: ",
+        bnbUsd: "BNB/USD:",
+        estUsd: "USD estimado:",
+        estElite: "Tokens a reclamar:",
+        estBnbNote: "Estimación usando precio BNB/USD (aprox).",
+        estStableNote: "Estimación usando stablecoin (≈ 1 USD).",
+        estNeedAmount: "Ingresa un monto para estimar.",
+        estPriceMissing: "Aún no hay precio de etapa. Espera un momento y reintenta."
       },
       en: {
         hint: "Tap the cigar to buy",
@@ -559,7 +612,14 @@
         claim: "CLAIM",
         connecting: "Connecting...",
         ended: "Ended",
-        connected: "Connected: "
+        connected: "Connected: ",
+        bnbUsd: "BNB/USD:",
+        estUsd: "Estimated USD:",
+        estElite: "Tokens to claim:",
+        estBnbNote: "Estimated using BNB/USD price (approx).",
+        estStableNote: "Estimated using stablecoin (≈ 1 USD).",
+        estNeedAmount: "Enter an amount to estimate.",
+        estPriceMissing: "Stage price not loaded yet. Wait a moment and try again."
       }
     };
 
@@ -581,6 +641,11 @@
       myPaidLabel.textContent = t.myPaid;
       buyBtn.textContent = t.buy;
       claimBtn.textContent = t.claim;
+
+      bnbUsdLabel.textContent = t.bnbUsd;
+      estUsdLabel.textContent = t.estUsd;
+      estEliteLabel.textContent = t.estElite;
+
       langBtn.textContent = (lang === "es") ? "EN" : "ES";
       amountInput.placeholder = (lang === "es") ? "Monto a invertir" : "Amount to invest";
     }
@@ -589,6 +654,7 @@
       lang = (lang === "es") ? "en" : "es";
       applyLang();
       refreshCountdown();
+      updateEstimate();
     });
 
     applyLang();
@@ -648,6 +714,128 @@
     }
 
     // =========================
+    // Precio BNB/USD + estimación (frontend)
+    // =========================
+    let lastPriceUsd1e6 = null; // desde currentStage()
+    let cachedBnbUsd = null;
+    let cachedBnbUsdAt = 0;
+
+    function fmtUsd(x) {
+      if (!isFinite(x)) return "—";
+      return "$" + x.toLocaleString("en-US", { maximumFractionDigits: 2 });
+    }
+
+    function fmtEliteNumber(x) {
+      if (!isFinite(x)) return "—";
+      return x.toLocaleString("es-CL", { maximumFractionDigits: 4 }) + " ELITE";
+    }
+
+    async function fetchBnbUsd() {
+      const now = Date.now();
+      if (cachedBnbUsd && (now - cachedBnbUsdAt) < 30000) return cachedBnbUsd;
+
+      // Fuente 1: Binance (BNBUSDT)
+      try {
+        const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT", { cache: "no-store" });
+        if (r.ok) {
+          const j = await r.json();
+          const p = Number(j.price);
+          if (isFinite(p) && p > 0) {
+            cachedBnbUsd = p; cachedBnbUsdAt = now;
+            return p;
+          }
+        }
+      } catch {}
+
+      // Fuente 2: CoinGecko
+      try {
+        const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd", { cache: "no-store" });
+        if (r.ok) {
+          const j = await r.json();
+          const p = Number(j?.binancecoin?.usd);
+          if (isFinite(p) && p > 0) {
+            cachedBnbUsd = p; cachedBnbUsdAt = now;
+            return p;
+          }
+        }
+      } catch {}
+
+      throw new Error("BNB_PRICE_UNAVAILABLE");
+    }
+
+    async function refreshBnbUsdUi() {
+      try {
+        const p = await fetchBnbUsd();
+        bnbUsdText.textContent = fmtUsd(p);
+      } catch {
+        bnbUsdText.textContent = "—";
+      }
+    }
+
+    async function updateEstimate() {
+      // Siempre intenta mostrar el BNB/USD
+      await refreshBnbUsdUi();
+
+      if (!lastPriceUsd1e6) {
+        estUsdText.textContent = "—";
+        estEliteText.textContent = "—";
+        estNote.textContent = T[lang].estPriceMissing;
+        return;
+      }
+
+      const raw = (amountInput.value || "").trim();
+      if (!raw || Number(raw) <= 0) {
+        estUsdText.textContent = "—";
+        estEliteText.textContent = "—";
+        estNote.textContent = T[lang].estNeedAmount;
+        return;
+      }
+
+      const currency = paySelect.value;
+      const amount = Number(raw);
+
+      const priceUsd = Number(lastPriceUsd1e6) / 1e6; // USD por 1 ELITE
+      if (!isFinite(priceUsd) || priceUsd <= 0) {
+        estUsdText.textContent = "—";
+        estEliteText.textContent = "—";
+        estNote.textContent = T[lang].estPriceMissing;
+        return;
+      }
+
+      try {
+        let usd = 0;
+
+        if (currency === "BNB") {
+          const bnbUsd = await fetchBnbUsd();
+          usd = amount * bnbUsd;
+          estNote.textContent = T[lang].estBnbNote + ` (1 BNB ≈ ${fmtUsd(bnbUsd)})`;
+        } else {
+          usd = amount; // USDT/USDC ≈ 1 USD
+          estNote.textContent = T[lang].estStableNote;
+        }
+
+        const elite = usd / priceUsd;
+
+        estUsdText.textContent = fmtUsd(usd);
+        estEliteText.textContent = fmtEliteNumber(elite);
+      } catch (e) {
+        console.error("estimate error", e);
+        estUsdText.textContent = "—";
+        estEliteText.textContent = "—";
+        estNote.textContent = (lang === "es")
+          ? "No se pudo obtener BNB/USD para estimar. Prueba con USDT/USDC."
+          : "Could not fetch BNB/USD to estimate. Try USDT/USDC.";
+      }
+    }
+
+    // Listeners para recalcular
+    paySelect.addEventListener("change", () => updateEstimate());
+    amountInput.addEventListener("input", () => {
+      clearTimeout(window.__est_t);
+      window.__est_t = setTimeout(updateEstimate, 250);
+    });
+
+    // =========================
     // Reads + progress
     // =========================
     const readProvider = new ethers.providers.JsonRpcProvider(RPC);
@@ -665,6 +853,10 @@
 
         stageText.textContent = `Stage ${stageNum} / 3`;
         priceText.textContent = fmtUsdPriceFromMicro(st.priceUsd1e6);
+
+        // Guardamos precio etapa para estimaciones
+        lastPriceUsd1e6 = st.priceUsd1e6;
+        updateEstimate();
 
         soldText.textContent = fmtTokenWhole(sold);
 
@@ -702,7 +894,10 @@
     // =========================
     // Modales: open/close
     // =========================
-    function openModal() { modalBackdrop.style.display = "flex"; }
+    function openModal() {
+      modalBackdrop.style.display = "flex";
+      updateEstimate();
+    }
     function closeModalFn() {
       modalBackdrop.style.display = "none";
       txNote.textContent = "";
@@ -711,6 +906,12 @@
       statusText.textContent = T[lang].connecting;
       buyBtn.disabled = true;
       claimBtn.disabled = true;
+
+      // reset estimación
+      bnbUsdText.textContent = "—";
+      estUsdText.textContent = "—";
+      estEliteText.textContent = "—";
+      estNote.textContent = "";
     }
     closeModal.addEventListener("click", closeModalFn);
     modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) closeModalFn(); });
@@ -827,6 +1028,7 @@
       await refreshProgress();
       refreshCountdown();
       amountInput.value = "";
+      updateEstimate();
     }
 
     buyBtn.addEventListener("click", async () => {
@@ -865,7 +1067,6 @@
 
     // =========================
     // Click puro: abre modal + conecta auto
-    // Si falla => cierra modal
     // =========================
     cigarHotspot.addEventListener("click", async () => {
       openModal();
