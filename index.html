@@ -11,16 +11,7 @@
     .stack { width:100%; max-width:560px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; }
 
     .logo-wrap { position: relative; width: min(70vw, 420px); }
-    .logo-img {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      height: auto;
-      display:block;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
-      pointer-events: none;
-    }
+    .logo-img { width: 100%; height: auto; display:block; user-select:none; -webkit-tap-highlight-color: transparent; pointer-events:none; }
     .cigar-hotspot {
       position: absolute;
       left: 60%;
@@ -133,7 +124,6 @@
       padding: 18px;
       box-sizing: border-box;
       z-index: 9999;
-      isolation: auto;
     }
     .modal {
       width: 100%;
@@ -217,44 +207,9 @@
     }
     .tok-table th { color:#fff; background:#111; }
     .tok-table tr:last-child td { border-bottom:none; }
-
-    /* ==========================================
-       FIX DEFINITIVO: Web3Modal + WalletConnect
-       SIEMPRE arriba del modal (z-index: 9999)
-       ========================================== */
-
-    /* Web3Modal v1 (ID típico) */
-    #WEB3_CONNECT_MODAL {
-      position: fixed !important;
-      z-index: 30000 !important;
-    }
-    #WEB3_CONNECT_MODAL * {
-      z-index: 30000 !important;
-    }
-
-    /* Otras clases posibles Web3Modal */
-    .web3modal-modal,
-    .web3modal-overlay,
-    .web3modal-provider-wrapper,
-    .web3modal-provider-container {
-      z-index: 30000 !important;
-    }
-
-    /* WalletConnect v1 QR modal */
-    .walletconnect-modal,
-    .walletconnect-qrcode__modal,
-    .walletconnect-qrcode__base,
-    .walletconnect-modal__base {
-      z-index: 40000 !important;
-    }
   </style>
 
-  <!-- ethers v5 -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-
-  <!-- Web3Modal v1 (multiwallet) + WalletConnect Provider v1 (QR) -->
-  <script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.12/dist/index.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 </head>
 
 <body>
@@ -333,9 +288,9 @@
         <span class="pill"><span class="muted" id="statusLabel">Estado:</span> <span id="statusText" class="big">Desconectado</span></span>
       </div>
 
-      <!-- Botones multiwallet -->
+      <!-- Solo MetaMask -->
       <div class="btnrow" style="margin-top:10px;">
-        <button id="connectBtn">Conectar wallet</button>
+        <button id="connectBtn">Conectar MetaMask</button>
         <button id="disconnectBtn" class="btn-secondary" disabled>Desconectar</button>
       </div>
 
@@ -358,7 +313,7 @@
       <!-- Precio BNB/USD -->
       <div class="row" style="margin-top:12px; justify-content:center;">
         <span class="pill">
-          <span class="muted" id="bnbUsdLabel">BNB/USD:</span>
+          <span class="muted">BNB/USD:</span>
           <span id="bnbUsdText" class="big">—</span>
         </span>
       </div>
@@ -366,11 +321,11 @@
       <!-- Estimación -->
       <div class="row" style="margin-top:10px; justify-content:center;">
         <span class="pill">
-          <span class="muted" id="estUsdLabel">USD estimado:</span>
+          <span class="muted">USD estimado:</span>
           <span id="estUsdText" class="big">—</span>
         </span>
         <span class="pill">
-          <span class="muted" id="estEliteLabel">Tokens a reclamar:</span>
+          <span class="muted">Tokens a reclamar:</span>
           <span id="estEliteText" class="big">—</span>
         </span>
       </div>
@@ -455,10 +410,9 @@
   </div>
 
   <script>
-    if (typeof ethers === "undefined") { alert("No se pudo cargar ethers.js"); throw new Error("ethers_not_loaded"); }
-    if (typeof Web3Modal === "undefined") { alert("No se pudo cargar Web3Modal"); throw new Error("web3modal_not_loaded"); }
-    if (typeof WalletConnectProvider === "undefined") { alert("No se pudo cargar WalletConnectProvider"); throw new Error("wc_not_loaded"); }
-
+    // =========================
+    // CONFIG
+    // =========================
     const PRESALE_ADDRESS = "0xccc6f2BE50a0c5b26Ac0a4d4A998F860e8c3A2aE";
     const USDT_ADDRESS = "0x55d398326f99059ff775485246999027b3197955";
     const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
@@ -500,11 +454,15 @@
       "function claimed(address) view returns (bool)",
       "function claim()"
     ];
+
     const ERC20_ABI = [
       "function decimals() view returns (uint8)",
       "function approve(address spender, uint256 amount) returns (bool)"
     ];
 
+    // =========================
+    // UI refs
+    // =========================
     const cigarHotspot = document.getElementById("cigarHotspot");
     const stageText = document.getElementById("stageText");
     const priceText = document.getElementById("priceText");
@@ -512,11 +470,9 @@
     const soldText = document.getElementById("soldText");
     const totalText = document.getElementById("totalText");
     const pctText = document.getElementById("pctText");
-
     const progressStage = document.getElementById("progressStage");
     const stageRemainText = document.getElementById("stageRemainText");
     const stagePctText = document.getElementById("stagePctText");
-
     const stageEndsText = document.getElementById("stageEndsText");
     const presaleEndsText = document.getElementById("presaleEndsText");
 
@@ -543,15 +499,18 @@
     const amountInput = document.getElementById("amountInput");
     const buyBtn = document.getElementById("buyBtn");
 
-    const bnbUsdText  = document.getElementById("bnbUsdText");
-    const estUsdText  = document.getElementById("estUsdText");
-    const estEliteText  = document.getElementById("estEliteText");
+    const bnbUsdText = document.getElementById("bnbUsdText");
+    const estUsdText = document.getElementById("estUsdText");
+    const estEliteText = document.getElementById("estEliteText");
     const estNote = document.getElementById("estNote");
 
     const claimBtn = document.getElementById("claimBtn");
     const txNote = document.getElementById("txNote");
     const claimNote = document.getElementById("claimNote");
 
+    // =========================
+    // Helpers
+    // =========================
     function shortAddr(a) { return a ? a.slice(0,6) + "..." + a.slice(-4) : ""; }
     function clampPct(x) { return Math.max(0, Math.min(100, x)); }
     function fmtTokenWhole(weiBn) {
@@ -593,6 +552,21 @@
       return `${d}d ${pad(h)}:${pad(m)}:${pad(s)}`;
     }
 
+    async function ensureBsc() {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (chainId === BSC_CHAIN_ID_HEX) return;
+      try {
+        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BSC_CHAIN_ID_HEX }] });
+      } catch (err) {
+        if (err && err.code === 4902) {
+          await window.ethereum.request({ method: "wallet_addEthereumChain", params: [BSC_PARAMS] });
+        } else { throw err; }
+      }
+    }
+
+    // =========================
+    // Init UI fixed fields
+    // =========================
     totalText.textContent = (30_000_000).toLocaleString("es-CL");
     presaleAddrShort.textContent = shortAddr(PRESALE_ADDRESS);
     presaleLink.href = EXPLORER_ADDR + PRESALE_ADDRESS;
@@ -607,68 +581,93 @@
       }
     });
 
+    // =========================
+    // Read + progress
+    // =========================
     const readProvider = new ethers.providers.JsonRpcProvider(RPC);
     const presaleRead = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, readProvider);
 
-    let web3Modal = null;
-    let externalProvider = null;
+    let lastStageNumber = 1;
+    let lastPriceUsd1e6 = null;
+
+    async function refreshProgress() {
+      try {
+        const sold = await presaleRead.soldTokens();
+        const st = await presaleRead.currentStage();
+
+        const stageNum = Number(st.stage.toString());
+        lastStageNumber = stageNum;
+
+        stageText.textContent = `Stage ${stageNum} / 3`;
+        priceText.textContent = fmtUsdPriceFromMicro(st.priceUsd1e6);
+        lastPriceUsd1e6 = st.priceUsd1e6;
+
+        soldText.textContent = fmtTokenWhole(sold);
+
+        const pctTotal = sold.mul(10_000).div(TOTAL_PRESALE_TOKENS_WEI).toNumber() / 100;
+        const pctTotalC = clampPct(pctTotal);
+        progressTotal.style.width = pctTotalC.toFixed(2) + "%";
+        pctText.textContent = pctTotalC.toFixed(2) + "%";
+
+        const stageSold = st.stageSold;
+        const stageCap = st.stageCap;
+
+        const stageRemainWei = stageCap.sub(stageSold);
+        stageRemainText.textContent = fmtTokenWhole(stageRemainWei);
+
+        const pctStage = stageSold.mul(10_000).div(stageCap).toNumber() / 100;
+        const pctStageC = clampPct(pctStage);
+        progressStage.style.width = pctStageC.toFixed(2) + "%";
+        stagePctText.textContent = pctStageC.toFixed(2) + "%";
+
+        updateEstimate();
+      } catch (e) {
+        console.error("refreshProgress error", e);
+      }
+    }
+
+    function refreshCountdown() {
+      const now = Date.now();
+      const stageEnd = STAGE_END_MS[lastStageNumber];
+      stageEndsText.textContent = formatCountdown(stageEnd - now);
+      presaleEndsText.textContent = formatCountdown(PRESALE_END_MS - now);
+    }
+
+    refreshProgress().then(refreshCountdown);
+    setInterval(async () => { await refreshProgress(); refreshCountdown(); }, 15000);
+    setInterval(refreshCountdown, 1000);
+
+    // =========================
+    // Tokenomics modal
+    // =========================
+    tokenomicsBtn.addEventListener("click", () => tokenomicsBackdrop.style.display = "flex");
+    closeTokenomics.addEventListener("click", () => tokenomicsBackdrop.style.display = "none");
+    tokenomicsBackdrop.addEventListener("click", (e) => { if (e.target === tokenomicsBackdrop) tokenomicsBackdrop.style.display = "none"; });
+
+    // =========================
+    // Buy modal open/close
+    // =========================
+    function openModal() { modalBackdrop.style.display = "flex"; updateEstimate(); refreshWalletUi(); }
+    function closeModalFn() {
+      modalBackdrop.style.display = "none";
+      txNote.textContent = "";
+      claimNote.textContent = "";
+      amountInput.value = "";
+      estNote.textContent = "";
+      estUsdText.textContent = "—";
+      estEliteText.textContent = "—";
+      bnbUsdText.textContent = "—";
+    }
+    closeModal.addEventListener("click", closeModalFn);
+    modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) closeModalFn(); });
+
+    // =========================
+    // MetaMask state
+    // =========================
     let provider = null;
     let signer = null;
     let account = null;
     let presaleWrite = null;
-
-    function initWeb3Modal() {
-      const providerOptions = {
-        walletconnect: {
-          package: WalletConnectProvider,
-          options: {
-            rpc: { 56: RPC },
-            chainId: 56,
-            qrcode: true,
-            qrcodeModalOptions: { mobileLinks: ["metamask", "trust", "rainbow"] }
-          }
-        }
-      };
-      web3Modal = new Web3Modal.default({
-        cacheProvider: true,
-        providerOptions,
-        theme: "dark"
-      });
-    }
-    initWeb3Modal();
-
-    async function getChainIdSafe(ext) {
-      try {
-        if (ext?.request) {
-          const cid = await ext.request({ method: "eth_chainId" });
-          return typeof cid === "string" ? parseInt(cid, 16) : Number(cid);
-        }
-      } catch {}
-      try {
-        const n = await provider.getNetwork();
-        return Number(n.chainId);
-      } catch {}
-      return null;
-    }
-
-    async function trySwitchToBsc(ext) {
-      if (!ext?.request) return false;
-      try {
-        const cid = await ext.request({ method: "eth_chainId" });
-        if (String(cid).toLowerCase() === BSC_CHAIN_ID_HEX) return true;
-
-        try {
-          await ext.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BSC_CHAIN_ID_HEX }] });
-          return true;
-        } catch (err) {
-          if (err && err.code === 4902) {
-            await ext.request({ method: "wallet_addEthereumChain", params: [BSC_PARAMS] });
-            return true;
-          }
-        }
-      } catch {}
-      return false;
-    }
 
     function refreshWalletUi() {
       if (!account) {
@@ -676,6 +675,7 @@
         buyBtn.disabled = true;
         claimBtn.disabled = true;
         disconnectBtn.disabled = true;
+        netText.textContent = "—";
         return;
       }
       statusText.textContent = "Conectado: " + shortAddr(account);
@@ -684,89 +684,112 @@
     }
 
     async function refreshNetworkUi() {
-      if (!externalProvider) { netText.textContent = "—"; return; }
-      const cid = await getChainIdSafe(externalProvider);
-      netText.textContent = (cid === BSC_CHAIN_ID) ? "BNB Chain ✅" : "Cambia a BNB Chain ⚠️";
-    }
-
-    async function connectWallet(openSelector = true) {
+      if (!window.ethereum) { netText.textContent = "—"; return; }
       try {
-        statusText.textContent = "Conectando...";
-        if (!web3Modal) initWeb3Modal();
-
-        externalProvider = openSelector
-          ? await web3Modal.connect()
-          : (web3Modal.cachedProvider ? await web3Modal.connect() : null);
-
-        if (!externalProvider) throw new Error("no_provider");
-
-        provider = new ethers.providers.Web3Provider(externalProvider, "any");
-        signer = provider.getSigner();
-
-        const accounts = await provider.listAccounts();
-        account = accounts && accounts.length ? accounts[0] : null;
-
-        await trySwitchToBsc(externalProvider);
-        presaleWrite = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, signer);
-
-        if (externalProvider.on) {
-          externalProvider.on("accountsChanged", (accs) => {
-            account = (accs && accs.length) ? accs[0] : null;
-            refreshWalletUi();
-            refreshMyStats();
-          });
-          externalProvider.on("chainChanged", () => {
-            refreshNetworkUi();
-            refreshMyStats();
-          });
-          externalProvider.on("disconnect", () => disconnectWallet());
-        }
-
-        refreshWalletUi();
-        await refreshNetworkUi();
-        await refreshMyStats();
-      } catch (e) {
-        console.error(e);
-        statusText.textContent = "Desconectado";
-        buyBtn.disabled = true;
-        claimBtn.disabled = true;
-        disconnectBtn.disabled = true;
-
-        if (e && e.code === 4001) alert("Conexión cancelada.");
-        else alert("No se pudo conectar la wallet.");
+        const chainId = await window.ethereum.request({ method: "eth_chainId" });
+        netText.textContent = (chainId === BSC_CHAIN_ID_HEX) ? "BNB Chain ✅" : "Cambia a BNB Chain ⚠️";
+      } catch {
+        netText.textContent = "—";
       }
     }
 
-    async function disconnectWallet() {
-      try { if (externalProvider && typeof externalProvider.disconnect === "function") await externalProvider.disconnect(); } catch {}
-      try { if (externalProvider && externalProvider.close) await externalProvider.close(); } catch {}
+    async function connectMetaMask() {
+      txNote.textContent = "";
+      claimNote.textContent = "";
+      statusText.textContent = "Conectando...";
+      buyBtn.disabled = true;
+      claimBtn.disabled = true;
 
-      externalProvider = null;
+      if (!window.ethereum) {
+        alert("No se detectó MetaMask. Instálala o abre esta página en el navegador de MetaMask.");
+        throw new Error("NO_METAMASK");
+      }
+
+      await ensureBsc();
+
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      account = accounts[0];
+
+      presaleWrite = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, signer);
+
+      await refreshNetworkUi();
+      refreshWalletUi();
+      await refreshMyStats();
+    }
+
+    async function disconnectMetaMask() {
+      // MetaMask no permite “desconectar” programáticamente; solo limpiamos estado UI.
       provider = null;
       signer = null;
-      account = null;
       presaleWrite = null;
-
-      try { await web3Modal.clearCachedProvider(); } catch {}
-
-      refreshWalletUi();
-      await refreshNetworkUi();
+      account = null;
 
       myEliteText.textContent = "0 ELITE";
       myUsdText.textContent = "$0";
       claimNote.textContent = "";
       txNote.textContent = "";
+
+      await refreshNetworkUi();
+      refreshWalletUi();
     }
 
-    connectBtn.addEventListener("click", () => connectWallet(true));
-    disconnectBtn.addEventListener("click", () => disconnectWallet());
+    connectBtn.addEventListener("click", async () => {
+      try { await connectMetaMask(); }
+      catch (e) {
+        console.error(e);
+        if (e && e.code === 4001) alert("Conexión cancelada.");
+      }
+    });
 
-    (async () => {
-      if (web3Modal?.cachedProvider) await connectWallet(false);
-      else { refreshWalletUi(); refreshNetworkUi(); }
-    })();
+    disconnectBtn.addEventListener("click", async () => { await disconnectMetaMask(); });
 
-    let lastPriceUsd1e6 = null;
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", () => window.location.reload());
+      window.ethereum.on("chainChanged", () => window.location.reload());
+    }
+
+    // =========================
+    // Stats + Claim state
+    // =========================
+    async function refreshMyStats() {
+      if (!presaleWrite || !account) {
+        myEliteText.textContent = "0 ELITE";
+        myUsdText.textContent = "$0";
+        claimBtn.disabled = true;
+        claimNote.textContent = "";
+        return;
+      }
+
+      const elite = await presaleWrite.purchasedTokens(account);
+      const usd1e6 = await presaleWrite.contributedUsd1e6(account);
+
+      myEliteText.textContent = fmtElite(elite);
+      myUsdText.textContent = fmtUsd1e6(usd1e6);
+
+      const isFinalized = await presaleWrite.presaleFinalized();
+      const isClaimEnabled = await presaleWrite.claimEnabled();
+      const isClaimed = await presaleWrite.claimed(account);
+
+      if (isFinalized && isClaimEnabled && !isClaimed && elite.gt(0)) {
+        claimBtn.disabled = false;
+        claimNote.textContent = "Claim disponible: puedes retirar tus ELITE.";
+      } else if (isFinalized && !isClaimEnabled) {
+        claimBtn.disabled = true;
+        claimNote.textContent = "La preventa terminó, pero el claim aún no está habilitado.";
+      } else if (isClaimed) {
+        claimBtn.disabled = true;
+        claimNote.textContent = "Ya hiciste claim.";
+      } else {
+        claimBtn.disabled = true;
+        claimNote.textContent = "";
+      }
+    }
+
+    // =========================
+    // BNB/USD + estimación
+    // =========================
     let cachedBnbUsd = null;
     let cachedBnbUsdAt = 0;
 
@@ -774,6 +797,7 @@
       const now = Date.now();
       if (cachedBnbUsd && (now - cachedBnbUsdAt) < 30000) return cachedBnbUsd;
 
+      // Binance
       try {
         const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT", { cache: "no-store" });
         if (r.ok) {
@@ -783,6 +807,7 @@
         }
       } catch {}
 
+      // CoinGecko fallback
       try {
         const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd", { cache: "no-store" });
         if (r.ok) {
@@ -833,7 +858,7 @@
           usd = amount * bnbUsd;
           estNote.textContent = "Estimación usando BNB/USD (aprox).";
         } else {
-          usd = amount;
+          usd = amount; // stables
           estNote.textContent = "Estimación usando stablecoin (≈ 1 USD).";
         }
         const elite = usd / priceUsd;
@@ -852,115 +877,14 @@
       window.__est_t = setTimeout(updateEstimate, 250);
     });
 
-    let lastStageNumber = 1;
-
-    async function refreshProgress() {
-      try {
-        const sold = await presaleRead.soldTokens();
-        const st = await presaleRead.currentStage();
-
-        const stageNum = Number(st.stage.toString());
-        lastStageNumber = stageNum;
-
-        stageText.textContent = `Stage ${stageNum} / 3`;
-        priceText.textContent = fmtUsdPriceFromMicro(st.priceUsd1e6);
-
-        lastPriceUsd1e6 = st.priceUsd1e6;
-        updateEstimate();
-
-        soldText.textContent = fmtTokenWhole(sold);
-
-        const pctTotal = sold.mul(10_000).div(TOTAL_PRESALE_TOKENS_WEI).toNumber() / 100;
-        const pctTotalC = clampPct(pctTotal);
-        progressTotal.style.width = pctTotalC.toFixed(2) + "%";
-        pctText.textContent = pctTotalC.toFixed(2) + "%";
-
-        const stageSold = st.stageSold;
-        const stageCap = st.stageCap;
-
-        const stageRemainWei = stageCap.sub(stageSold);
-        stageRemainText.textContent = fmtTokenWhole(stageRemainWei);
-
-        const pctStage = stageSold.mul(10_000).div(stageCap).toNumber() / 100;
-        const pctStageC = clampPct(pctStage);
-        progressStage.style.width = pctStageC.toFixed(2) + "%";
-        stagePctText.textContent = pctStageC.toFixed(2) + "%";
-      } catch (e) {
-        console.error("refreshProgress error", e);
-      }
-    }
-
-    function refreshCountdown() {
-      const now = Date.now();
-      const stageEnd = STAGE_END_MS[lastStageNumber];
-      stageEndsText.textContent = formatCountdown(stageEnd - now);
-      presaleEndsText.textContent = formatCountdown(PRESALE_END_MS - now);
-    }
-
-    refreshProgress().then(() => { refreshCountdown(); refreshNetworkUi(); refreshWalletUi(); });
-    setInterval(async () => { await refreshProgress(); refreshCountdown(); }, 15000);
-    setInterval(refreshCountdown, 1000);
-
-    function openModal() { modalBackdrop.style.display = "flex"; updateEstimate(); refreshNetworkUi(); refreshWalletUi(); }
-    function closeModalFn() {
-      modalBackdrop.style.display = "none";
-      txNote.textContent = "";
-      claimNote.textContent = "";
-      amountInput.value = "";
-      estNote.textContent = "";
-      estUsdText.textContent = "—";
-      estEliteText.textContent = "—";
-      bnbUsdText.textContent = "—";
-    }
-    closeModal.addEventListener("click", closeModalFn);
-    modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) closeModalFn(); });
-
-    tokenomicsBtn.addEventListener("click", () => tokenomicsBackdrop.style.display = "flex");
-    closeTokenomics.addEventListener("click", () => tokenomicsBackdrop.style.display = "none");
-    tokenomicsBackdrop.addEventListener("click", (e) => { if (e.target === tokenomicsBackdrop) tokenomicsBackdrop.style.display = "none"; });
-
-    async function refreshMyStats() {
-      if (!presaleWrite || !account) {
-        myEliteText.textContent = "0 ELITE";
-        myUsdText.textContent = "$0";
-        claimBtn.disabled = true;
-        claimNote.textContent = "";
-        return;
-      }
-
-      const elite = await presaleWrite.purchasedTokens(account);
-      const usd1e6 = await presaleWrite.contributedUsd1e6(account);
-
-      myEliteText.textContent = fmtElite(elite);
-      myUsdText.textContent = fmtUsd1e6(usd1e6);
-
-      const isFinalized = await presaleWrite.presaleFinalized();
-      const isClaimEnabled = await presaleWrite.claimEnabled();
-      const isClaimed = await presaleWrite.claimed(account);
-
-      if (isFinalized && isClaimEnabled && !isClaimed && elite.gt(0)) {
-        claimBtn.disabled = false;
-        claimNote.textContent = "Claim disponible: puedes retirar tus ELITE.";
-      } else if (isFinalized && !isClaimEnabled) {
-        claimBtn.disabled = true;
-        claimNote.textContent = "La preventa terminó, pero el claim aún no está habilitado.";
-      } else if (isClaimed) {
-        claimBtn.disabled = true;
-        claimNote.textContent = "Ya hiciste claim.";
-      } else {
-        claimBtn.disabled = true;
-        claimNote.textContent = "";
-      }
-    }
-
+    // =========================
+    // Buy
+    // =========================
     async function buy() {
-      if (!account || !presaleWrite) {
-        await connectWallet(true);
-        if (!account || !presaleWrite) return;
+      if (!account) {
+        await connectMetaMask();
+        if (!account) return;
       }
-
-      const cid = await getChainIdSafe(externalProvider);
-      if (cid !== null && cid !== BSC_CHAIN_ID) { alert("Cambia a BNB Smart Chain para comprar."); return; }
 
       const currency = paySelect.value;
       const raw = (amountInput.value || "").trim();
@@ -974,6 +898,7 @@
         await tx.wait();
       } else {
         const tokenAddr = currency === "USDT" ? USDT_ADDRESS : USDC_ADDRESS;
+
         const token = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
         const dec = await token.decimals();
         const amt = ethers.utils.parseUnits(raw, dec);
@@ -993,19 +918,20 @@
       amountInput.value = "";
       updateEstimate();
     }
+
     buyBtn.addEventListener("click", async () => {
       try { await buy(); }
       catch (e) { console.error(e); alert("Error: " + (e?.reason || e?.message || e)); }
     });
 
+    // =========================
+    // Claim
+    // =========================
     async function claim() {
-      if (!account || !presaleWrite) {
-        await connectWallet(true);
-        if (!account || !presaleWrite) return;
+      if (!account) {
+        await connectMetaMask();
+        if (!account) return;
       }
-
-      const cid = await getChainIdSafe(externalProvider);
-      if (cid !== null && cid !== BSC_CHAIN_ID) { alert("Cambia a BNB Smart Chain para hacer claim."); return; }
 
       claimBtn.disabled = true;
       claimNote.textContent = "Enviando claim...";
@@ -1017,15 +943,27 @@
       await refreshMyStats();
       claimNote.textContent = "Claim completado ✅";
     }
+
     claimBtn.addEventListener("click", async () => {
       try { await claim(); }
       catch (e) { console.error(e); claimNote.textContent = ""; alert("Error: " + (e?.reason || e?.message || e)); }
     });
 
+    // =========================
+    // Click puro: abre modal + conecta MetaMask
+    // =========================
     cigarHotspot.addEventListener("click", async () => {
       openModal();
-      if (!account) await connectWallet(true);
+      try {
+        await refreshNetworkUi();
+        if (!account) await connectMetaMask();
+      } catch (e) {
+        console.error(e);
+      }
     });
+
+    // init net status
+    refreshNetworkUi();
   </script>
 </body>
 </html>
