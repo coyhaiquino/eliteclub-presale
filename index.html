@@ -227,13 +227,13 @@
         <button class="lang-btn" id="langBtn">EN</button>
 
         <div class="row" style="justify-content:center;">
-          <span class="pill"><span class="muted" id="stageLabel">Etapa:</span> <span id="stageText" class="big">—</span></span>
-          <span class="pill"><span class="muted" id="priceLabel">Precio:</span> <span id="priceText" class="big">—</span></span>
+          <span class="pill"><span class="muted">Etapa:</span> <span id="stageText" class="big">—</span></span>
+          <span class="pill"><span class="muted">Precio:</span> <span id="priceText" class="big">—</span></span>
         </div>
 
         <div class="subline" style="margin-top:12px;">
-          <span class="pill"><span class="muted" id="netLabel">Red:</span> <span id="netText" class="big">—</span></span>
-          <span class="pill"><span class="muted" id="addrLabel">Preventa:</span> <span id="presaleAddrShort" class="big">—</span></span>
+          <span class="pill"><span class="muted">Red:</span> <span id="netText" class="big">—</span></span>
+          <span class="pill"><span class="muted">Preventa:</span> <span id="presaleAddrShort" class="big">—</span></span>
         </div>
         <div class="subline" style="margin-top:8px;">
           <button class="chip-btn" id="copyAddrBtn">Copiar</button>
@@ -247,8 +247,8 @@
         </div>
 
         <div class="row" style="margin-top:10px;">
-          <span class="pill"><span class="muted" id="soldLabel">Vendido:</span> <span id="soldText" class="big">0</span></span>
-          <span class="pill"><span class="muted" id="totalLabel">Total:</span> <span id="totalText" class="big">30,000,000</span></span>
+          <span class="pill"><span class="muted">Vendido:</span> <span id="soldText" class="big">0</span></span>
+          <span class="pill"><span class="muted">Total:</span> <span id="totalText" class="big">30,000,000</span></span>
           <span class="pill"><span class="muted">%</span> <span id="pctText" class="big">0%</span></span>
         </div>
 
@@ -257,13 +257,13 @@
         </div>
 
         <div class="subline">
-          <span class="pill"><span class="muted" id="stageRemainLabel">Quedan etapa:</span> <span id="stageRemainText" class="big">—</span></span>
-          <span class="pill"><span class="muted" id="stagePctLabel">Etapa %:</span> <span id="stagePctText" class="big">—</span></span>
+          <span class="pill"><span class="muted">Quedan etapa:</span> <span id="stageRemainText" class="big">—</span></span>
+          <span class="pill"><span class="muted">Etapa %:</span> <span id="stagePctText" class="big">—</span></span>
         </div>
 
         <div class="subline">
-          <span class="pill"><span class="muted" id="stageEndsLabel">Termina etapa:</span> <span id="stageEndsText" class="big">—</span></span>
-          <span class="pill"><span class="muted" id="presaleEndsLabel">Termina preventa:</span> <span id="presaleEndsText" class="big">—</span></span>
+          <span class="pill"><span class="muted">Termina etapa:</span> <span id="stageEndsText" class="big">—</span></span>
+          <span class="pill"><span class="muted">Termina preventa:</span> <span id="presaleEndsText" class="big">—</span></span>
         </div>
 
         <button class="tokenomics-btn" id="tokenomicsBtn">TOKENOMICS</button>
@@ -276,12 +276,17 @@
   <div class="modal-backdrop" id="modalBackdrop">
     <div class="modal">
       <div class="modal-head">
-        <div class="modal-title" id="modalTitle">Comprar ELITE</div>
+        <div class="modal-title">Comprar ELITE</div>
         <button class="close-btn" id="closeModal">Cerrar</button>
       </div>
 
       <div class="row" style="justify-content:center;">
-        <span class="pill"><span class="muted">Estado:</span> <span id="statusText" class="big">Conectando...</span></span>
+        <span class="pill"><span class="muted">Estado:</span> <span id="statusText" class="big">Desconectado</span></span>
+      </div>
+
+      <!-- Botón de desconectar (UI local) -->
+      <div class="btnrow" style="margin-top:10px;">
+        <button id="disconnectBtn" class="btn-secondary" disabled>DESCONectar</button>
       </div>
 
       <div class="row" style="margin-top:12px;">
@@ -316,6 +321,10 @@
 
       <div class="note" id="txNote"></div>
       <div class="note" id="claimNote"></div>
+
+      <div class="note" style="margin-top:12px;">
+        Nota: Para desconectar “realmente” el sitio, debes hacerlo desde MetaMask → <b>Connected sites / Sitios conectados</b>.
+      </div>
     </div>
   </div>
 
@@ -472,6 +481,7 @@
     const modalBackdrop = document.getElementById("modalBackdrop");
     const closeModal = document.getElementById("closeModal");
     const statusText = document.getElementById("statusText");
+    const disconnectBtn = document.getElementById("disconnectBtn");
 
     const myEliteText = document.getElementById("myEliteText");
     const myUsdText = document.getElementById("myUsdText");
@@ -501,34 +511,28 @@
       if (!isFinite(n)) return v;
       return n.toLocaleString("es-CL");
     }
-
     function fmtElite(wei) {
       const v = ethers.utils.formatUnits(wei, 18);
       const n = Number(v);
       if (!isFinite(n)) return v + " ELITE";
       return n.toLocaleString("es-CL", { maximumFractionDigits: 4 }) + " ELITE";
     }
-
     function fmtUsd1e6(u) {
       const usd = Number(u) / 1e6;
       return "$" + usd.toLocaleString("en-US", { maximumFractionDigits: 2 });
     }
-
     function fmtUsdPriceFromMicro(p) {
       const usd = Number(p) / 1e6;
       return "$" + usd.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
     }
-
     function fmtUsd(x) {
       if (!isFinite(x)) return "—";
       return "$" + x.toLocaleString("en-US", { maximumFractionDigits: 2 });
     }
-
     function fmtEliteNumber(x) {
       if (!isFinite(x)) return "—";
       return x.toLocaleString("es-CL", { maximumFractionDigits: 4 }) + " ELITE";
     }
-
     function formatCountdown(msLeft) {
       if (msLeft <= 0) return "Finalizado";
       const sec = Math.floor(msLeft / 1000);
@@ -540,11 +544,6 @@
       return `${d}d ${pad(h)}:${pad(m)}:${pad(s)}`;
     }
 
-    // =========================
-    // MetaMask: orden correcto
-    // 1) eth_requestAccounts (abre popup)
-    // 2) wallet_switchEthereumChain / add
-    // =========================
     async function ensureBsc(providerLike) {
       const chainId = await providerLike.request({ method: "eth_chainId" });
       if (chainId === BSC_CHAIN_ID_HEX) return;
@@ -650,19 +649,7 @@
     // Buy modal open/close
     // =========================
     function openModal() { modalBackdrop.style.display = "flex"; }
-    function closeModalFn() {
-      modalBackdrop.style.display = "none";
-      txNote.textContent = "";
-      claimNote.textContent = "";
-      amountInput.value = "";
-      estNote.textContent = "";
-      estUsdText.textContent = "—";
-      estEliteText.textContent = "—";
-      bnbUsdText.textContent = "—";
-      statusText.textContent = "Conectando...";
-      buyBtn.disabled = true;
-      claimBtn.disabled = true;
-    }
+    function closeModalFn() { modalBackdrop.style.display = "none"; }
     closeModal.addEventListener("click", closeModalFn);
     modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) closeModalFn(); });
 
@@ -684,23 +671,27 @@
       }
     }
 
-    function refreshWalletUi() {
-      if (!account) {
-        statusText.textContent = "Desconectado";
-        buyBtn.disabled = true;
-        claimBtn.disabled = true;
-        return;
-      }
+    function setDisconnectedUi() {
+      statusText.textContent = "Desconectado";
+      buyBtn.disabled = true;
+      claimBtn.disabled = true;
+      disconnectBtn.disabled = true;
+
+      myEliteText.textContent = "0 ELITE";
+      myUsdText.textContent = "$0";
+      txNote.textContent = "";
+      claimNote.textContent = "";
+    }
+
+    function setConnectedUi() {
       statusText.textContent = "Conectado: " + shortAddr(account);
       buyBtn.disabled = false;
+      disconnectBtn.disabled = false;
     }
 
     async function refreshMyStats() {
       if (!presaleWrite || !account) {
-        myEliteText.textContent = "0 ELITE";
-        myUsdText.textContent = "$0";
-        claimBtn.disabled = true;
-        claimNote.textContent = "";
+        setDisconnectedUi();
         return;
       }
 
@@ -730,16 +721,14 @@
     }
 
     async function connectMetaMaskOrThrow() {
-      txNote.textContent = "";
-      claimNote.textContent = "";
+      const eth = window.ethereum;
+      if (!eth) throw new Error("NO_METAMASK");
+
       statusText.textContent = "Conectando...";
       buyBtn.disabled = true;
       claimBtn.disabled = true;
 
-      const eth = window.ethereum;
-      if (!eth) throw new Error("NO_METAMASK");
-
-      // 1) PRIMERO pedir cuentas (dispara popup)
+      // 1) PRIMERO pedir cuentas
       const accounts = await eth.request({ method: "eth_requestAccounts" });
       if (!accounts || !accounts.length) throw new Error("NO_ACCOUNTS");
 
@@ -754,9 +743,20 @@
       presaleWrite = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, signer);
 
       await refreshNetworkUi();
-      refreshWalletUi();
+      setConnectedUi();
       await refreshMyStats();
     }
+
+    // “Desconectar” local (UI): MetaMask sigue con permiso, pero la web queda sin estado.
+    function disconnectLocal() {
+      provider = null;
+      signer = null;
+      presaleWrite = null;
+      account = null;
+      setDisconnectedUi();
+    }
+
+    disconnectBtn.addEventListener("click", () => disconnectLocal());
 
     // =========================
     // BNB/USD + estimación
@@ -938,6 +938,7 @@
 
     refreshNetworkUi();
     updateEstimate();
+    setDisconnectedUi();
   </script>
 </body>
 </html>
