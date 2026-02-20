@@ -281,12 +281,12 @@
       </div>
 
       <div class="row" style="justify-content:center;">
-        <span class="pill"><span class="muted" id="statusLabel">Estado:</span> <span id="statusText" class="big">Conectando...</span></span>
+        <span class="pill"><span class="muted">Estado:</span> <span id="statusText" class="big">Conectando...</span></span>
       </div>
 
       <div class="row" style="margin-top:12px;">
-        <span class="pill"><span class="muted" id="myAllocLabel">Tu asignación:</span> <span id="myEliteText" class="big">0 ELITE</span></span>
-        <span class="pill"><span class="muted" id="myPaidLabel">Aportado:</span> <span id="myUsdText" class="big">$0</span></span>
+        <span class="pill"><span class="muted">Tu asignación:</span> <span id="myEliteText" class="big">0 ELITE</span></span>
+        <span class="pill"><span class="muted">Aportado:</span> <span id="myUsdText" class="big">$0</span></span>
       </div>
 
       <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
@@ -540,15 +540,29 @@
       return `${d}d ${pad(h)}:${pad(m)}:${pad(s)}`;
     }
 
-    async function ensureBsc() {
-      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+    // =========================
+    // MetaMask: orden correcto
+    // 1) eth_requestAccounts (abre popup)
+    // 2) wallet_switchEthereumChain / add
+    // =========================
+    async function ensureBsc(providerLike) {
+      const chainId = await providerLike.request({ method: "eth_chainId" });
       if (chainId === BSC_CHAIN_ID_HEX) return;
+
       try {
-        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BSC_CHAIN_ID_HEX }] });
+        await providerLike.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: BSC_CHAIN_ID_HEX }]
+        });
       } catch (err) {
         if (err && err.code === 4902) {
-          await window.ethereum.request({ method: "wallet_addEthereumChain", params: [BSC_PARAMS] });
-        } else { throw err; }
+          await providerLike.request({
+            method: "wallet_addEthereumChain",
+            params: [BSC_PARAMS]
+          });
+        } else {
+          throw err;
+        }
       }
     }
 
@@ -672,7 +686,7 @@
 
     function refreshWalletUi() {
       if (!account) {
-        statusText.textContent = "Conectando...";
+        statusText.textContent = "Desconectado";
         buyBtn.disabled = true;
         claimBtn.disabled = true;
         return;
@@ -722,12 +736,18 @@
       buyBtn.disabled = true;
       claimBtn.disabled = true;
 
-      if (!window.ethereum) throw new Error("NO_METAMASK");
+      const eth = window.ethereum;
+      if (!eth) throw new Error("NO_METAMASK");
 
-      await ensureBsc();
+      // 1) PRIMERO pedir cuentas (dispara popup)
+      const accounts = await eth.request({ method: "eth_requestAccounts" });
+      if (!accounts || !accounts.length) throw new Error("NO_ACCOUNTS");
 
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
+      // 2) DESPUÉS cambiar a BSC
+      await ensureBsc(eth);
+
+      // 3) provider/signer
+      provider = new ethers.providers.Web3Provider(eth);
       signer = provider.getSigner();
       account = accounts[0];
 
@@ -891,7 +911,7 @@
     });
 
     // =========================
-    // Click puro: abre modal + conecta directo MetaMask
+    // Click puro: abre modal + conecta MetaMask DIRECTO
     // =========================
     cigarHotspot.addEventListener("click", async () => {
       openModal();
@@ -911,13 +931,11 @@
       }
     });
 
-    // listeners
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", () => window.location.reload());
       window.ethereum.on("chainChanged", () => window.location.reload());
     }
 
-    // init
     refreshNetworkUi();
     updateEstimate();
   </script>
