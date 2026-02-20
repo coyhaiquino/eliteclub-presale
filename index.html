@@ -113,7 +113,6 @@
     }
     .chip-btn:hover { filter: brightness(0.92); }
 
-    /* Modal */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -237,9 +236,7 @@
         </div>
         <div class="subline" style="margin-top:8px;">
           <button class="chip-btn" id="copyAddrBtn">Copiar</button>
-          <a id="presaleLink" target="_blank" rel="noreferrer" class="chip-btn" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">
-            BscScan
-          </a>
+          <a id="presaleLink" target="_blank" rel="noreferrer" class="chip-btn" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">BscScan</a>
         </div>
 
         <div class="progress-wrap" aria-label="Total progress">
@@ -284,9 +281,10 @@
         <span class="pill"><span class="muted">Estado:</span> <span id="statusText" class="big">Desconectado</span></span>
       </div>
 
-      <!-- Botón de desconectar (UI local) -->
+      <!-- Conectar / Desconectar -->
       <div class="btnrow" style="margin-top:10px;">
-        <button id="disconnectBtn" class="btn-secondary" disabled>DESCONectar</button>
+        <button id="connectBtn" class="btn-secondary">Conectar</button>
+        <button id="disconnectBtn" class="btn-secondary" style="display:none;">Desconectar</button>
       </div>
 
       <div class="row" style="margin-top:12px;">
@@ -337,9 +335,7 @@
       </div>
 
       <div class="section-title">Visión</div>
-      <p class="p">
-        EliteClub nace con un propósito claro: crear una comunidad verdaderamente élite de inversores.
-      </p>
+      <p class="p">EliteClub nace con un propósito claro: crear una comunidad verdaderamente élite de inversores.</p>
       <p class="p">
         Al participar en la preventa de ELITE, no solo compras un token: aseguras tu lugar dentro de un club privado de inversores,
         construido desde cero, donde todos comienzan en igualdad de condiciones.
@@ -372,14 +368,12 @@
       <div class="section-title">¿Por qué BNB Chain?</div>
       <p class="p">
         EliteClub se construye sobre BNB Chain por estabilidad, seriedad y escalabilidad. Es una de las plataformas más sólidas,
-        utilizadas y confiables del ecosistema cripto, con infraestructura probada y un ecosistema maduro.
+        utilizadas y confiables del ecosistema cripto.
       </p>
 
       <div class="section-title">Tokenomics (Supply: 100,000,000 ELITE)</div>
       <table class="tok-table">
-        <thead>
-          <tr><th>Asignación</th><th>%</th><th>Tokens</th></tr>
-        </thead>
+        <thead><tr><th>Asignación</th><th>%</th><th>Tokens</th></tr></thead>
         <tbody>
           <tr><td>Preventa (3 etapas)</td><td>30%</td><td>30,000,000</td></tr>
           <tr><td>Liquidez</td><td>20%</td><td>20,000,000</td></tr>
@@ -389,11 +383,6 @@
           <tr><td>Reserva estratégica</td><td>5%</td><td>5,000,000</td></tr>
         </tbody>
       </table>
-
-      <p class="p" style="margin-top:10px;">
-        Nota: La distribución puede ajustarse para optimizar liquidez, desarrollo y crecimiento, manteniendo siempre el principio
-        de transparencia y fair launch.
-      </p>
     </div>
   </div>
 
@@ -410,7 +399,6 @@
 
     const TOTAL_PRESALE_TOKENS_WEI = ethers.BigNumber.from("30000000").mul(ethers.BigNumber.from("10").pow(18));
 
-    // Fechas
     const PRESALE_START_MS = new Date("2026-02-13T00:00:00Z").getTime();
     const DAY = 24 * 60 * 60 * 1000;
     const STAGE1_DAYS = 7, STAGE2_DAYS = 7, STAGE3_DAYS = 14;
@@ -421,7 +409,6 @@
     };
     const PRESALE_END_MS = STAGE_END_MS[3];
 
-    // BSC
     const BSC_CHAIN_ID_HEX = "0x38";
     const BSC_PARAMS = {
       chainId: BSC_CHAIN_ID_HEX,
@@ -431,7 +418,6 @@
       blockExplorerUrls: ["https://bscscan.com/"]
     };
 
-    // ABI
     const PRESALE_ABI = [
       "function buyWithBNB() payable",
       "function buyWithStable(address token, uint256 amount)",
@@ -481,6 +467,8 @@
     const modalBackdrop = document.getElementById("modalBackdrop");
     const closeModal = document.getElementById("closeModal");
     const statusText = document.getElementById("statusText");
+
+    const connectBtn = document.getElementById("connectBtn");
     const disconnectBtn = document.getElementById("disconnectBtn");
 
     const myEliteText = document.getElementById("myEliteText");
@@ -504,7 +492,6 @@
     // =========================
     function shortAddr(a) { return a ? a.slice(0,6) + "..." + a.slice(-4) : ""; }
     function clampPct(x) { return Math.max(0, Math.min(100, x)); }
-
     function fmtTokenWhole(weiBn) {
       const v = ethers.utils.formatUnits(weiBn, 18);
       const n = Math.floor(Number(v));
@@ -547,18 +534,11 @@
     async function ensureBsc(providerLike) {
       const chainId = await providerLike.request({ method: "eth_chainId" });
       if (chainId === BSC_CHAIN_ID_HEX) return;
-
       try {
-        await providerLike.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: BSC_CHAIN_ID_HEX }]
-        });
+        await providerLike.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BSC_CHAIN_ID_HEX }] });
       } catch (err) {
         if (err && err.code === 4902) {
-          await providerLike.request({
-            method: "wallet_addEthereumChain",
-            params: [BSC_PARAMS]
-          });
+          await providerLike.request({ method: "wallet_addEthereumChain", params: [BSC_PARAMS] });
         } else {
           throw err;
         }
@@ -646,7 +626,7 @@
     tokenomicsBackdrop.addEventListener("click", (e) => { if (e.target === tokenomicsBackdrop) tokenomicsBackdrop.style.display = "none"; });
 
     // =========================
-    // Buy modal open/close
+    // Modal open/close
     // =========================
     function openModal() { modalBackdrop.style.display = "flex"; }
     function closeModalFn() { modalBackdrop.style.display = "none"; }
@@ -666,17 +646,15 @@
       try {
         const chainId = await window.ethereum.request({ method: "eth_chainId" });
         netText.textContent = (chainId === BSC_CHAIN_ID_HEX) ? "BNB Chain ✅" : "Cambia a BNB Chain ⚠️";
-      } catch {
-        netText.textContent = "—";
-      }
+      } catch { netText.textContent = "—"; }
     }
 
     function setDisconnectedUi() {
       statusText.textContent = "Desconectado";
+      connectBtn.style.display = "inline-block";
+      disconnectBtn.style.display = "none";
       buyBtn.disabled = true;
       claimBtn.disabled = true;
-      disconnectBtn.disabled = true;
-
       myEliteText.textContent = "0 ELITE";
       myUsdText.textContent = "$0";
       txNote.textContent = "";
@@ -685,15 +663,13 @@
 
     function setConnectedUi() {
       statusText.textContent = "Conectado: " + shortAddr(account);
+      connectBtn.style.display = "none";
+      disconnectBtn.style.display = "inline-block";
       buyBtn.disabled = false;
-      disconnectBtn.disabled = false;
     }
 
     async function refreshMyStats() {
-      if (!presaleWrite || !account) {
-        setDisconnectedUi();
-        return;
-      }
+      if (!presaleWrite || !account) { setDisconnectedUi(); return; }
 
       const elite = await presaleWrite.purchasedTokens(account);
       const usd1e6 = await presaleWrite.contributedUsd1e6(account);
@@ -725,21 +701,15 @@
       if (!eth) throw new Error("NO_METAMASK");
 
       statusText.textContent = "Conectando...";
-      buyBtn.disabled = true;
-      claimBtn.disabled = true;
 
-      // 1) PRIMERO pedir cuentas
       const accounts = await eth.request({ method: "eth_requestAccounts" });
       if (!accounts || !accounts.length) throw new Error("NO_ACCOUNTS");
 
-      // 2) DESPUÉS cambiar a BSC
       await ensureBsc(eth);
 
-      // 3) provider/signer
       provider = new ethers.providers.Web3Provider(eth);
       signer = provider.getSigner();
       account = accounts[0];
-
       presaleWrite = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, signer);
 
       await refreshNetworkUi();
@@ -747,7 +717,6 @@
       await refreshMyStats();
     }
 
-    // “Desconectar” local (UI): MetaMask sigue con permiso, pero la web queda sin estado.
     function disconnectLocal() {
       provider = null;
       signer = null;
@@ -756,6 +725,15 @@
       setDisconnectedUi();
     }
 
+    connectBtn.addEventListener("click", async () => {
+      try { await connectMetaMaskOrThrow(); }
+      catch (e) {
+        console.error(e);
+        if (e && e.message === "NO_METAMASK") alert("No se detectó MetaMask.");
+        else if (e && e.code === 4001) alert("Conexión cancelada en MetaMask.");
+        else alert("No se pudo conectar. Reintenta.");
+      }
+    });
     disconnectBtn.addEventListener("click", () => disconnectLocal());
 
     // =========================
@@ -793,9 +771,7 @@
       try {
         const p = await fetchBnbUsd();
         bnbUsdText.textContent = fmtUsd(p);
-      } catch {
-        bnbUsdText.textContent = "—";
-      }
+      } catch { bnbUsdText.textContent = "—"; }
     }
 
     async function updateEstimate() {
@@ -911,29 +887,22 @@
     });
 
     // =========================
-    // Click puro: abre modal + conecta MetaMask DIRECTO
+    // Click puro: abre modal + conecta directo
     // =========================
     cigarHotspot.addEventListener("click", async () => {
       openModal();
-      try {
-        await connectMetaMaskOrThrow();
-      } catch (e) {
+      try { await connectMetaMaskOrThrow(); }
+      catch (e) {
         console.error(e);
-        closeModalFn();
-
-        if (e && e.message === "NO_METAMASK") {
-          alert("No se detectó MetaMask. Instálala o abre esta página en el navegador de MetaMask.");
-        } else if (e && e.code === 4001) {
-          alert("Conexión cancelada. Toca el puro nuevamente y acepta en MetaMask.");
-        } else {
-          alert("No se pudo conectar a MetaMask. Reintenta tocando el puro.");
-        }
+        if (e && e.message === "NO_METAMASK") alert("No se detectó MetaMask.");
+        else if (e && e.code === 4001) alert("Conexión cancelada.");
+        else alert("No se pudo conectar. Reintenta.");
       }
     });
 
     if (window.ethereum) {
-      window.ethereum.on("accountsChanged", () => window.location.reload());
-      window.ethereum.on("chainChanged", () => window.location.reload());
+      window.ethereum.on("accountsChanged", () => { disconnectLocal(); });
+      window.ethereum.on("chainChanged", () => { disconnectLocal(); });
     }
 
     refreshNetworkUi();
