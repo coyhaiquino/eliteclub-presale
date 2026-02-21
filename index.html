@@ -3,56 +3,211 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Elite Club - Presale</title>
+  <title>Elite Club — Presale</title>
+
+  <!-- Ethers v5 (compatible con MetaMask) -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
   <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; background:#000; color:#fff; font-family: Arial, sans-serif; }
-    .center { width:100%; min-height:100%; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
-    .stack { width:100%; max-width:560px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; }
+    :root{
+      --bg:#000;
+      --fg:#fff;
+      --muted:rgba(255,255,255,.72);
+      --soft:rgba(255,255,255,.10);
+      --soft2:rgba(255,255,255,.16);
+      --ok:#00ff95;
+      --warn:#ffcc00;
+      --bad:#ff4d4d;
+      --card: rgba(255,255,255,.03);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", Helvetica, sans-serif;
+      overflow-x:hidden;
+    }
 
-    .logo-wrap { position: relative; width: min(70vw, 420px); }
-    .logo-img { width: 100%; height: auto; display:block; user-select:none; -webkit-tap-highlight-color: transparent; pointer-events:none; }
-    .cigar-hotspot {
-      position: absolute;
-      left: 60%;
-      top: 63%;
-      width: 35%;
-      height: 30%;
-      cursor: pointer;
+    .wrap{
+      min-height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:28px 16px 40px;
+      gap:18px;
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+    }
+
+    .logoBox{
+      width:min(360px, 82vw);
+      aspect-ratio:1/1;
+      display:grid;
+      place-items:center;
+      border-radius:28px;
+      background: radial-gradient(circle at 50% 35%, rgba(255,255,255,.08), rgba(255,255,255,0) 60%);
+      border:1px solid var(--soft);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.03) inset, 0 18px 55px rgba(0,0,0,.7);
+      position:relative;
+      transition: transform .15s ease, border-color .15s ease;
+    }
+    .logoBox:hover{ transform: translateY(-1px); border-color: var(--soft2); }
+
+    /* Hotspot del puro (clic) */
+    .cigarHotspot{
+      position:absolute;
+      left:56%;
+      top:56%;
+      width:40%;
+      height:34%;
+      border-radius:18px;
       background: rgba(255,255,255,0.0);
-      border-radius: 18px;
-      z-index: 5;
-      pointer-events: auto;
+      cursor:pointer;
+      z-index:5;
     }
 
-    .hint { font-size:0.88rem; color:#cfcfcf; margin-top:-6px; }
-
-    .card {
-      width:100%;
-      background:#0a0a0a;
-      border:1px solid #222;
-      border-radius:14px;
-      padding:16px;
-      box-sizing:border-box;
-      text-align:left;
-      position: relative;
-    }
-
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
-    .pill { display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; background:#111; border:1px solid #222; white-space:nowrap; }
-    .muted { color:#bdbdbd; }
-    .big { font-size:1.05rem; font-weight:700; }
-
-    .progress-wrap {
-      width:100%;
-      height:14px;
+    .hint{
+      position:absolute;
+      bottom:14px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:12px;
+      color:var(--muted);
+      padding:6px 10px;
       border-radius:999px;
-      background:#151515;
-      border:1px solid #222;
-      overflow:hidden;
+      border:1px solid var(--soft);
+      background:rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+      white-space:nowrap;
+      pointer-events:none;
+    }
+
+    .title{
+      font-size:22px;
+      letter-spacing:.22em;
+      text-transform:uppercase;
+      margin:0;
+      opacity:.95;
+    }
+
+    .phrase{
+      min-height:24px;
+      font-size:14px;
+      color:var(--muted);
+      text-align:center;
+      max-width:62ch;
+      line-height:1.35;
+      padding:0 8px;
+    }
+
+    .pill{
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid var(--soft);
+      background: rgba(0,0,0,.45);
+      font-size:12px;
+      color:var(--muted);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background: var(--bad);
+      box-shadow:0 0 12px rgba(255,77,77,.35);
+    }
+    .dot.ok{ background: var(--ok); box-shadow:0 0 12px rgba(0,255,149,.35); }
+    .dot.warn{ background: var(--warn); box-shadow:0 0 12px rgba(255,204,0,.35); }
+
+    .panel{
+      width:min(860px, 96vw);
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
       margin-top:10px;
     }
-    .progress-bar {
+
+    .split{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:12px;
+    }
+    @media (max-width: 820px){
+      .split{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      border:1px solid var(--soft);
+      border-radius:18px;
+      background: var(--card);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset;
+      padding:14px;
+    }
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .label{ color:var(--muted); font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+    .value{ font-size:13px; color:rgba(255,255,255,.92); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; }
+    button{
+      appearance:none;
+      border:1px solid var(--soft);
+      background: rgba(255,255,255,.05);
+      color:var(--fg);
+      border-radius:999px;
+      padding:10px 14px;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+    button:hover{ transform: translateY(-1px); border-color:var(--soft2); background: rgba(255,255,255,.07); }
+    button:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+
+    input, select{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--soft);
+      background: rgba(0,0,0,.55);
+      color:var(--fg);
+      outline:none;
+      font-size:14px;
+    }
+    input:focus, select:focus{ border-color: var(--soft2); }
+
+    .msg{
+      margin-top:10px;
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    .progressWrap{
+      width:100%;
+      height:12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--soft);
+      overflow:hidden;
+      margin-top:8px;
+    }
+    .progressBar{
       height:100%;
       width:0%;
       border-radius:999px;
@@ -60,482 +215,311 @@
       transition: width 650ms ease;
     }
 
-    .progress-wrap.small { height:10px; margin-top:8px; }
-    .progress-bar.stage {
-      background: linear-gradient(90deg, #ffb300, #ff6d00);
-      transition: width 650ms ease;
+    .footer{
+      margin-top:8px;
+      font-size:12px;
+      color:rgba(255,255,255,.45);
+      text-align:center;
+      max-width:70ch;
+      line-height:1.35;
     }
 
-    .subline {
-      margin-top:10px;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
+    /* Logo SVG */
+    .logoSVG{
+      width:72%;
+      max-width:260px;
+      filter: drop-shadow(0 18px 24px rgba(0,0,0,.75));
+    }
+    .accent{ opacity:.92; }
+    .smoke{
+      opacity:.25;
+      animation: float 4.8s ease-in-out infinite;
+      transform-origin:center;
+    }
+    @keyframes float{
+      0%,100%{ transform: translateY(0px); opacity:.22; }
+      50%{ transform: translateY(-6px); opacity:.33; }
+    }
+
+    /* Modal */
+    .backdrop{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.72);
+      display:none;
+      align-items:center;
       justify-content:center;
+      padding:18px;
+      z-index:9999;
     }
-
-    .lang-btn {
-      position:absolute;
-      top:12px;
-      right:12px;
-      background:#111;
+    .modal{
+      width:min(560px, 96vw);
+      background:#0a0a0a;
       border:1px solid #222;
-      color:#fff;
-      border-radius: 999px;
-      padding: 8px 10px;
-      cursor: pointer;
-      font-size: 0.9rem;
+      border-radius:18px;
+      padding:14px;
+      max-height:82vh;
+      overflow:auto;
+      box-shadow: 0 30px 90px rgba(0,0,0,.75);
     }
-    .lang-btn:hover { filter: brightness(0.92); }
-
-    .tokenomics-btn {
-      width:100%;
-      margin-top:12px;
-      padding: 12px 12px;
-      border-radius: 12px;
-      background:#111;
-      border:1px solid #222;
-      color:#fff;
-      cursor:pointer;
-      font-weight:700;
-      letter-spacing: 0.5px;
-    }
-    .tokenomics-btn:hover { filter: brightness(0.92); }
-
-    .chip-btn {
-      padding: 10px 12px;
-      border-radius: 12px;
-      background:#111;
-      border:1px solid #222;
-      color:#fff;
-      cursor:pointer;
-      font-weight:700;
-    }
-    .chip-btn:hover { filter: brightness(0.92); }
-
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 18px;
-      box-sizing: border-box;
-      z-index: 9999;
-    }
-    .modal {
-      width: 100%;
-      max-width: 560px;
-      background: #0a0a0a;
-      border: 1px solid #222;
-      border-radius: 16px;
-      padding: 16px;
-      box-sizing: border-box;
-      text-align: left;
-      max-height: 80vh;
-      overflow: auto;
-    }
-    .modal-head {
+    .modalHead{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap: 10px;
-      margin-bottom: 10px;
-      position: sticky;
-      top: 0;
-      background: #0a0a0a;
-      padding-top: 4px;
-      padding-bottom: 10px;
-      z-index: 2;
+      gap:10px;
+      position:sticky;
+      top:0;
+      background:#0a0a0a;
+      padding:4px 0 10px;
+      z-index:2;
     }
-    .modal-title { font-size: 1.05rem; font-weight: 700; }
-    .close-btn {
-      background: #222;
-      border: 1px solid #333;
-      color: #fff;
-      border-radius: 10px;
-      padding: 10px 12px;
-      cursor: pointer;
+    .modalTitle{ font-weight:900; letter-spacing:.08em; text-transform:uppercase; font-size:14px; color: rgba(255,255,255,.9); }
+    .closeBtn{
+      border-radius:12px;
+      padding:10px 12px;
+      border:1px solid #333;
+      background:#141414;
     }
 
-    select, input, button {
-      padding: 12px 12px;
-      border-radius: 10px;
-      border: 1px solid #333;
-      background: #0f0f0f;
-      color: #fff;
-      font-size: 0.95rem;
-      outline: none;
-    }
-    button { cursor:pointer; border:none; background:#1e90ff; }
-    button:hover { filter: brightness(0.92); }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-
-    .btn-secondary { background:#222; border:1px solid #333; }
-    .btnrow { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:12px; }
-    .note { margin-top:10px; font-size:0.82rem; color:#a9a9a9; line-height:1.35; text-align:center; }
-    a { color:#7bb6ff; text-decoration:none; }
-
-    .section-title { margin:14px 0 6px; font-weight:800; font-size: 1.02rem; }
-    .p { margin:0 0 10px; color:#d8d8d8; line-height:1.45; }
-    .bullet { margin: 0 0 10px 18px; color:#d8d8d8; line-height:1.45; }
-    .quote {
-      margin: 10px 0 14px;
-      padding: 12px;
-      border: 1px solid #222;
-      background:#0f0f0f;
-      border-radius: 12px;
-      color:#eaeaea;
-      font-style: italic;
-    }
-    .tok-table {
-      width:100%;
-      border-collapse: collapse;
-      margin-top: 8px;
-      border: 1px solid #222;
-      border-radius: 12px;
-      overflow:hidden;
-    }
-    .tok-table th, .tok-table td {
-      padding: 10px;
-      border-bottom: 1px solid #222;
-      text-align:left;
-      color:#d8d8d8;
-      font-size: 0.92rem;
-    }
-    .tok-table th { color:#fff; background:#111; }
-    .tok-table tr:last-child td { border-bottom:none; }
-  
-    /* ====== Pro polish ====== */
-    :root{
-      --bg:#000;
-      --panel:#0a0a0a;
-      --panel2:#0f0f0f;
-      --border:#222;
-      --border2:#2b2b2b;
-      --text:#fff;
-      --muted:#bdbdbd;
-      --muted2:#9f9f9f;
-      --primary:#2f7dff;
-      --primary2:#1e90ff;
-      --success:#00c853;
-      --warning:#ffb300;
-      --danger:#ff4d4d;
-      --radius:16px;
-      --shadow: 0 14px 45px rgba(0,0,0,.45);
-    }
-
-    html, body { background: var(--bg); }
-    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-
-    .card, .modal { box-shadow: var(--shadow); }
-    .card { border-radius: var(--radius); }
-    .modal { border-radius: calc(var(--radius) + 2px); }
-
-    .pill { transition: transform 120ms ease, filter 120ms ease; }
-    .pill:hover { filter: brightness(0.98); }
-
-    button, .chip-btn, .tokenomics-btn, .close-btn { transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease; }
-    button:active, .chip-btn:active, .tokenomics-btn:active, .close-btn:active { transform: translateY(1px); }
-
-    button:focus-visible, input:focus-visible, select:focus-visible {
-      outline: 2px solid rgba(47,125,255,.65);
-      outline-offset: 2px;
-    }
-
-    .chip-btn.primary { background: var(--primary); border-color: transparent; }
-    .chip-btn.primary:hover { filter: brightness(0.94); }
-    .chip-btn.danger { background:#1a0f0f; border-color:#3a1e1e; color:#ffd2d2; }
-    .chip-btn.danger:hover { filter: brightness(0.96); }
-
-    .badge {
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      background:#0f0f0f;
-      border:1px solid var(--border);
-      color:#eaeaea;
-      white-space:nowrap;
-      font-size: 0.92rem;
-    }
-    .dot { width:9px; height:9px; border-radius:99px; background: var(--muted2); }
-    .dot.ok { background: var(--success); }
-    .dot.warn { background: var(--warning); }
-    .dot.bad { background: var(--danger); }
-
-    /* Toast */
-    .toast-wrap{
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 18px;
-      display:flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 10050;
-      pointer-events:none;
-      padding: 0 14px;
-      width: min(560px, 100%);
-      box-sizing: border-box;
-    }
-    .toast{
-      pointer-events:auto;
-      background: rgba(15,15,15,.95);
-      border: 1px solid var(--border2);
-      border-radius: 14px;
-      padding: 12px 12px;
-      display:flex;
-      gap: 10px;
-      align-items:flex-start;
-      box-shadow: 0 12px 40px rgba(0,0,0,.55);
-      backdrop-filter: blur(8px);
-    }
-    .toast .t-title{ font-weight: 800; margin-bottom: 2px; }
-    .toast .t-msg{ color: #d6d6d6; line-height: 1.35; }
-    .toast .t-x{
-      margin-left:auto;
-      background:#111;
-      border:1px solid var(--border2);
-      border-radius: 10px;
-      padding: 6px 10px;
-      cursor:pointer;
-      color:#fff;
-    }
-    .toast.info { border-color: rgba(47,125,255,.35); }
-    .toast.success { border-color: rgba(0,200,83,.35); }
-    .toast.warn { border-color: rgba(255,179,0,.35); }
-    .toast.error { border-color: rgba(255,77,77,.35); }
-
+    a{ color:#7bb6ff; text-decoration:none; }
   </style>
-
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 </head>
 
 <body>
-  <div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
+  <main class="wrap">
 
-  <div class="center">
-    <div class="stack">
+    <section class="brand">
+      <div class="logoBox" id="logoBox">
+        <!-- Logo SVG placeholder (puedes reemplazar por tu logo real en PNG/SVG) -->
+        <svg class="logoSVG" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Elite Club">
+          <!-- Hat -->
+          <path class="accent" d="M82 230c22-62 88-102 174-102s152 40 174 102c-22 14-66 34-174 34S104 244 82 230Z" fill="white" opacity="0.92"/>
+          <path d="M108 232c28-44 82-72 148-72s120 28 148 72c-40 18-86 26-148 26s-108-8-148-26Z" fill="black" opacity="0.55"/>
+          <path d="M116 244c46 24 92 32 140 32s94-8 140-32" stroke="white" stroke-opacity="0.22" stroke-width="10" stroke-linecap="round"/>
 
-      <div class="logo-wrap">
-        <img src="logo.png" alt="Elite Club Logo" class="logo-img" />
-        <div class="cigar-hotspot" id="cigarHotspot" title="Buy"></div>
+          <!-- Cigar -->
+          <g id="cigar">
+            <rect x="290" y="290" width="170" height="42" rx="18" fill="white" opacity="0.88"/>
+            <rect x="290" y="290" width="38" height="42" rx="18" fill="black" opacity="0.45"/>
+            <rect x="430" y="290" width="30" height="42" rx="14" fill="black" opacity="0.25"/>
+            <path d="M460 302c18 6 18 24 0 30" stroke="white" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/>
+          </g>
+
+          <!-- Smoke -->
+          <g class="smoke">
+            <path d="M470 260c-18-18-2-34 16-40" stroke="white" stroke-opacity="0.35" stroke-width="7" stroke-linecap="round"/>
+            <path d="M452 244c-20-20-4-42 18-52" stroke="white" stroke-opacity="0.25" stroke-width="7" stroke-linecap="round"/>
+            <path d="M430 240c-14-14-2-28 14-34" stroke="white" stroke-opacity="0.18" stroke-width="7" stroke-linecap="round"/>
+          </g>
+        </svg>
+
+        <!-- Hotspot del puro -->
+        <div class="cigarHotspot" id="cigarHotspot" title="Conectar y comprar"></div>
+
+        <div class="hint">Clic en el puro → Conectar & Comprar</div>
       </div>
 
-      <div class="hint" id="hintText">Toca el puro para comprar</div>
+      <h1 class="title">Elite Club</h1>
+      <div class="phrase" id="phrase"></div>
 
-      <div class="card">
-        <button class="lang-btn" id="langBtn">EN</button>
+      <div class="pill" id="statusPill">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusTextTop">Desconectado</span>
+      </div>
+    </section>
 
-        <div class="row" style="justify-content:center;">
-          <span class="pill"><span class="muted">Etapa:</span> <span id="stageText" class="big">—</span></span>
-          <span class="pill"><span class="muted">Precio:</span> <span id="priceText" class="big">—</span></span>
+    <section class="panel">
+      <div class="split">
+
+        <!-- INFO / PROGRESO -->
+        <div class="card">
+          <div class="row">
+            <div>
+              <div class="label">Red</div>
+              <div class="value" id="netText">—</div>
+            </div>
+            <div>
+              <div class="label">Wallet</div>
+              <div class="value mono" id="walletText">—</div>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="row">
+            <div>
+              <div class="label">Stage</div>
+              <div class="value" id="stageText">—</div>
+            </div>
+            <div>
+              <div class="label">Precio</div>
+              <div class="value" id="priceText">—</div>
+            </div>
+            <div>
+              <div class="label">Vendido</div>
+              <div class="value" id="soldText">—</div>
+            </div>
+          </div>
+
+          <div class="progressWrap" aria-label="Progreso total">
+            <div class="progressBar" id="progressBar"></div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="row">
+            <div style="flex:1">
+              <div class="label">Token (ELITE)</div>
+              <div class="value mono" id="tokenAddr">—</div>
+            </div>
+            <div class="btns">
+              <button id="copyToken">Copiar</button>
+              <a id="tokenLink" class="pill" target="_blank" rel="noreferrer">BscScan</a>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="row">
+            <div style="flex:1">
+              <div class="label">Presale (Contrato)</div>
+              <div class="value mono" id="presaleAddr">—</div>
+            </div>
+            <div class="btns">
+              <button id="copyPresale">Copiar</button>
+              <a id="presaleLink" class="pill" target="_blank" rel="noreferrer">BscScan</a>
+            </div>
+          </div>
+
+          <p class="msg" id="infoMsg">Página anónima: sin nombres ni fotos personales. Solo Elite Club.</p>
         </div>
 
-        <div class="subline" style="margin-top:12px;">
-          <span class="pill"><span class="muted">Red:</span> <span id="netText" class="big">—</span></span>
-          <span class="pill"><span class="muted">Preventa:</span> <span id="presaleAddrShort" class="big">—</span></span>
-        </div>
-        <div class="subline" style="margin-top:8px;">
-          <button class="chip-btn" id="copyAddrBtn">Copiar</button>
-          <a id="presaleLink" target="_blank" rel="noreferrer" class="chip-btn" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">BscScan</a>
+        <!-- COMPRA (abre también en modal) -->
+        <div class="card">
+          <div class="label">Acción rápida</div>
+          <div class="msg" style="margin-top:6px">
+            Clic en el puro para abrir el panel de compra. Si ya estás conectado, podrás comprar al instante.
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="row">
+            <button id="btnConnect">Conectar</button>
+            <button id="btnDisconnect" disabled>Desconectar</button>
+            <button id="btnOpenBuy">Comprar</button>
+          </div>
+
+          <div class="msg" id="quickMsg">Conecta MetaMask en BSC (BNB Chain).</div>
+
+          <div style="height:10px"></div>
+
+          <div class="row">
+            <div>
+              <div class="label">Balance (BNB)</div>
+              <div class="value" id="balanceText">—</div>
+            </div>
+            <div>
+              <div class="label">BNB/USD</div>
+              <div class="value" id="bnbUsdText">—</div>
+            </div>
+          </div>
+
+          <div class="footer" style="margin-top:12px;">
+            Revisa siempre la dirección del contrato antes de enviar fondos.
+          </div>
         </div>
 
-        
-        <div class="subline" style="margin-top:10px;">
-          <span class="badge" id="walletBadge"><span class="dot" id="walletDot"></span><span id="walletText">Wallet no conectada</span></span>
-          <button class="chip-btn primary" id="openBuyBtn">Comprar</button>
-          <button class="chip-btn" id="topConnectBtn">Conectar</button>
-          <button class="chip-btn danger" id="topDisconnectBtn" style="display:none;">Salir</button>
-        </div>
-<div class="progress-wrap" aria-label="Total progress">
-          <div class="progress-bar" id="progressTotal"></div>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <span class="pill"><span class="muted">Vendido:</span> <span id="soldText" class="big">0</span></span>
-          <span class="pill"><span class="muted">Total:</span> <span id="totalText" class="big">30,000,000</span></span>
-          <span class="pill"><span class="muted">%</span> <span id="pctText" class="big">0%</span></span>
-        </div>
-
-        <div class="progress-wrap small" aria-label="Stage progress">
-          <div class="progress-bar stage" id="progressStage"></div>
-        </div>
-
-        <div class="subline">
-          <span class="pill"><span class="muted">Quedan etapa:</span> <span id="stageRemainText" class="big">—</span></span>
-          <span class="pill"><span class="muted">Etapa %:</span> <span id="stagePctText" class="big">—</span></span>
-        </div>
-
-        <div class="subline">
-          <span class="pill"><span class="muted">Termina etapa:</span> <span id="stageEndsText" class="big">—</span></span>
-          <span class="pill"><span class="muted">Termina preventa:</span> <span id="presaleEndsText" class="big">—</span></span>
-        </div>
-
-        <button class="tokenomics-btn" id="tokenomicsBtn">TOKENOMICS</button>
       </div>
 
-    </div>
-  </div>
+      <div class="footer">
+        Elite Club — Presale. Código front-end (index.html) listo para subir.
+      </div>
+    </section>
+  </main>
 
   <!-- MODAL COMPRA -->
-  <div class="modal-backdrop" id="modalBackdrop">
+  <div class="backdrop" id="buyBackdrop">
     <div class="modal">
-      <div class="modal-head">
-        <div class="modal-title">Comprar ELITE</div>
-        <button class="close-btn" id="closeModal">Cerrar</button>
+      <div class="modalHead">
+        <div class="modalTitle">Comprar ELITE</div>
+        <button class="closeBtn" id="closeBuy">Cerrar</button>
       </div>
 
       <div class="row" style="justify-content:center;">
-        <span class="pill"><span class="muted">Estado:</span> <span id="statusText" class="big">Desconectado</span></span>
+        <span class="pill"><span class="muted">Estado:</span> <span id="statusTextModal" class="value">Desconectado</span></span>
       </div>
 
-      <!-- Conectar / Desconectar -->
-      <div class="btnrow" style="margin-top:10px;">
-        <button id="connectBtn" class="btn-secondary">Conectar</button>
-        <button id="disconnectBtn" class="btn-secondary" style="display:none;">Desconectar</button>
-      </div>
+      <div style="height:12px"></div>
 
-      
-      <div class="row" style="margin-top:10px; justify-content:center;">
-        <span class="pill"><span class="muted">Balance:</span> <span id="balText" class="big">—</span></span>
-        <button id="maxBtn" class="btn-secondary" disabled style="padding:10px 12px; border-radius:12px;">MAX</button>
-      </div>
-<div class="row" style="margin-top:12px;">
-        <span class="pill"><span class="muted">Tu asignación:</span> <span id="myEliteText" class="big">0 ELITE</span></span>
-        <span class="pill"><span class="muted">Aportado:</span> <span id="myUsdText" class="big">$0</span></span>
-      </div>
-
-      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-        <select id="paySelect">
+      <div class="row">
+        <select id="paySelect" style="flex: .6">
           <option value="BNB">BNB</option>
           <option value="USDT">USDT</option>
           <option value="USDC">USDC</option>
         </select>
-
-        <input id="amountInput" type="number" min="0" step="0.000001" placeholder="Monto a invertir" style="flex:1;" />
-        <button id="buyBtn" disabled>Comprar</button>
+        <input id="amountInput" inputmode="decimal" placeholder="Monto (ej: 0.05)" style="flex:1" />
       </div>
 
-      <div class="row" style="margin-top:12px; justify-content:center;">
-        <span class="pill"><span class="muted">BNB/USD:</span> <span id="bnbUsdText" class="big">—</span></span>
+      <div style="height:10px"></div>
+
+      <div class="row">
+        <button id="btnMax" disabled>Max</button>
+        <button id="btnBuy" disabled>Comprar</button>
+        <button id="btnClaim" disabled>Claim</button>
       </div>
+
+      <div class="msg" id="estNote">Ingresa un monto para estimar.</div>
 
       <div class="row" style="margin-top:10px; justify-content:center;">
-        <span class="pill"><span class="muted">USD estimado:</span> <span id="estUsdText" class="big">—</span></span>
-        <span class="pill"><span class="muted">Tokens a reclamar:</span> <span id="estEliteText" class="big">—</span></span>
-      </div>
-      <div class="note" id="estNote"></div>
-
-      <div class="btnrow">
-        <button id="claimBtn" class="btn-secondary" disabled>CLAIM</button>
+        <span class="pill"><span class="muted">USD estimado:</span> <span id="estUsdText" class="value">—</span></span>
+        <span class="pill"><span class="muted">Tokens aprox:</span> <span id="estEliteText" class="value">—</span></span>
       </div>
 
-      <div class="note" id="txNote"></div>
-      <div class="note" id="claimNote"></div>
+      <div class="msg" id="txNote"></div>
+      <div class="msg" id="claimNote"></div>
 
-      <div class="note" style="margin-top:12px;">
-        Nota: Para desconectar “realmente” el sitio, debes hacerlo desde MetaMask → <b>Connected sites / Sitios conectados</b>.
+      <div class="msg" style="margin-top:12px; color: rgba(255,255,255,.5)">
+        Nota: Para “desconectar” totalmente el sitio, usa MetaMask → Sitios conectados.
       </div>
     </div>
   </div>
 
-  <!-- MODAL TOKENOMICS -->
-  <div class="modal-backdrop" id="tokenomicsBackdrop">
-    <div class="modal">
-      <div class="modal-head">
-        <div class="modal-title">EliteClub — Tokenomics</div>
-        <button class="close-btn" id="closeTokenomics">Cerrar</button>
-      </div>
+<script>
+  /***********************
+   * CONFIG (YA LISTO)
+   ***********************/
+  const CONFIG = {
+    // Direcciones reales (tuyas)
+    tokenAddress:  "0x1855F65545bFa5e7F7511dAA89632f1166534dF2",
+    presaleAddress:"0xccc6f2BE50a0c5b26Ac0a4d4A998F860e8c3A2aE",
 
-      <div class="section-title">Visión</div>
-      <p class="p">EliteClub nace con un propósito claro: crear una comunidad verdaderamente élite de inversores.</p>
-      <p class="p">
-        Al participar en la preventa de ELITE, no solo compras un token: aseguras tu lugar dentro de un club privado de inversores,
-        construido desde cero, donde todos comienzan en igualdad de condiciones.
-      </p>
+    // Stables (BSC)
+    usdtAddress: "0x55d398326f99059ff775485246999027b3197955",
+    usdcAddress: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
 
-      <div class="section-title">Fair Launch</div>
-      <p class="p">No existen insiders. No existe lista blanca. No hay ventajas ocultas. Todos empezamos desde 0.</p>
-      <ul class="bullet">
-        <li>Sin preventas privadas ocultas</li>
-        <li>Sin privilegios para grupos cerrados</li>
-        <li>Las mismas reglas para todos</li>
-      </ul>
+    // BSC
+    chainIdHex: "0x38",
+    chainIdDec: 56,
+    chainName: "BNB Smart Chain",
+    rpc: "https://bsc-dataseed.binance.org/",
+    explorerAddr: "https://bscscan.com/address/",
+    explorerTx: "https://bscscan.com/tx/",
+    nativeSymbol: "BNB",
 
-      <div class="section-title">Después de la preventa</div>
-      <p class="p">
-        Al terminar la preventa, la comunidad EliteClub se reunirá en un entorno privado y se revelarán personas muy conocidas
-        dentro del mundo de las criptomonedas que formarán parte del proyecto.
-      </p>
+    // Total preventa (según tu diseño anterior: 30,000,000 ELITE)
+    totalPresaleTokensWei: ethers.BigNumber.from("30000000").mul(ethers.BigNumber.from("10").pow(18)),
 
-      <div class="quote">“No buscamos memes. Buscamos construir una sociedad élite dentro del ecosistema cripto.”</div>
+    // Frases rotativas
+    phrases: [
+      "No es para todos. Es para los que entienden.",
+      "La entrada es silenciosa. La salida es legendaria.",
+      "Elite Club: la preventa ocurre en la sombra.",
+      "Si lo dudas, no es tu lugar.",
+      "Códigos, humo y lealtad."
+    ],
 
-      <div class="section-title">Estrategia de listados</div>
-      <p class="p">EliteClub no nace para morir en exchanges pequeños ni en plataformas sin impacto real.</p>
-      <ul class="bullet">
-        <li>Enfoque en DEX y CEX reconocidos</li>
-        <li>Buscamos exposición, liquidez y prestigio</li>
-        <li>Si el proyecto es élite, su presencia en el mercado también debe serlo</li>
-      </ul>
-
-      <div class="section-title">¿Por qué BNB Chain?</div>
-      <p class="p">
-        EliteClub se construye sobre BNB Chain por estabilidad, seriedad y escalabilidad. Es una de las plataformas más sólidas,
-        utilizadas y confiables del ecosistema cripto.
-      </p>
-
-      <div class="section-title">Tokenomics (Supply: 100,000,000 ELITE)</div>
-      <table class="tok-table">
-        <thead><tr><th>Asignación</th><th>%</th><th>Tokens</th></tr></thead>
-        <tbody>
-          <tr><td>Preventa (3 etapas)</td><td>30%</td><td>30,000,000</td></tr>
-          <tr><td>Liquidez</td><td>20%</td><td>20,000,000</td></tr>
-          <tr><td>Desarrollo & Ecosistema</td><td>20%</td><td>20,000,000</td></tr>
-          <tr><td>Marketing & Expansión</td><td>15%</td><td>15,000,000</td></tr>
-          <tr><td>Equipo (con vesting)</td><td>10%</td><td>10,000,000</td></tr>
-          <tr><td>Reserva estratégica</td><td>5%</td><td>5,000,000</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <script>
-    // =========================
-    // CONFIG
-    // =========================
-    const PRESALE_ADDRESS = "0xccc6f2BE50a0c5b26Ac0a4d4A998F860e8c3A2aE";
-    const USDT_ADDRESS = "0x55d398326f99059ff775485246999027b3197955";
-    const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
-    const EXPLORER_TX = "https://bscscan.com/tx/";
-    const EXPLORER_ADDR = "https://bscscan.com/address/";
-    const RPC = "https://bsc-dataseed.binance.org/";
-
-    const TOTAL_PRESALE_TOKENS_WEI = ethers.BigNumber.from("30000000").mul(ethers.BigNumber.from("10").pow(18));
-
-    const PRESALE_START_MS = new Date("2026-02-13T00:00:00Z").getTime();
-    const DAY = 24 * 60 * 60 * 1000;
-    const STAGE1_DAYS = 7, STAGE2_DAYS = 7, STAGE3_DAYS = 14;
-    const STAGE_END_MS = {
-      1: PRESALE_START_MS + (STAGE1_DAYS * DAY),
-      2: PRESALE_START_MS + ((STAGE1_DAYS + STAGE2_DAYS) * DAY),
-      3: PRESALE_START_MS + ((STAGE1_DAYS + STAGE2_DAYS + STAGE3_DAYS) * DAY),
-    };
-    const PRESALE_END_MS = STAGE_END_MS[3];
-
-    const BSC_CHAIN_ID_HEX = "0x38";
-    const BSC_PARAMS = {
-      chainId: BSC_CHAIN_ID_HEX,
-      chainName: "BNB Smart Chain",
-      nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-      rpcUrls: [RPC],
-      blockExplorerUrls: ["https://bscscan.com/"]
-    };
-
-    const PRESALE_ABI = [
+    // ABI (según tu contrato de presale anterior)
+    presaleAbi: [
       "function buyWithBNB() payable",
       "function buyWithStable(address token, uint256 amount)",
       "function purchasedTokens(address) view returns (uint256)",
@@ -546,622 +530,474 @@
       "function claimEnabled() view returns (bool)",
       "function claimed(address) view returns (bool)",
       "function claim()"
-    ];
+    ],
 
-    const ERC20_ABI = [
+    erc20Abi: [
       "function decimals() view returns (uint8)",
       "function approve(address spender, uint256 amount) returns (bool)"
-    ];
+    ]
+  };
 
-    // =========================
-    // UI refs
-    // =========================
-    const cigarHotspot = document.getElementById("cigarHotspot");
+  /***********************
+   * DOM helpers
+   ***********************/
+  const el = (id) => document.getElementById(id);
+  const shortAddr = (a) => a ? a.slice(0,6) + "…" + a.slice(-4) : "—";
+  const clampPct = (x) => Math.max(0, Math.min(100, x));
+  const fmtUsd = (x) => isFinite(x) ? "$" + x.toLocaleString("en-US",{maximumFractionDigits:2}) : "—";
+  const fmtUsd1e6 = (u) => "$" + (Number(u)/1e6).toLocaleString("en-US",{maximumFractionDigits:2});
+  const fmtUsdPriceFromMicro = (p) => {
+    const usd = Number(p)/1e6;
+    if(!isFinite(usd)) return "—";
+    const s = usd.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
+    return "$" + s;
+  };
+  const fmtTokenWhole = (weiBn) => {
+    const v = ethers.utils.formatUnits(weiBn, 18);
+    const n = Math.floor(Number(v));
+    if(!isFinite(n)) return v;
+    return n.toLocaleString("es-CL");
+  };
+  const fmtElite = (wei) => {
+    const v = ethers.utils.formatUnits(wei,18);
+    const n = Number(v);
+    if(!isFinite(n)) return v + " ELITE";
+    return n.toLocaleString("es-CL",{maximumFractionDigits:4}) + " ELITE";
+  };
 
-    const stageText = document.getElementById("stageText");
-    const priceText = document.getElementById("priceText");
-    const progressTotal = document.getElementById("progressTotal");
-    const soldText = document.getElementById("soldText");
-    const totalText = document.getElementById("totalText");
-    const pctText = document.getElementById("pctText");
+  function setStatus(state, textTop, textModal){
+    const dot = el("statusDot");
+    dot.classList.remove("ok","warn");
+    if(state === "ok") dot.classList.add("ok");
+    else if(state === "warn") dot.classList.add("warn");
+    el("statusTextTop").textContent = textTop;
+    el("statusTextModal").textContent = textModal ?? textTop;
+  }
 
-    const progressStage = document.getElementById("progressStage");
-    const stageRemainText = document.getElementById("stageRemainText");
-    const stagePctText = document.getElementById("stagePctText");
-
-    const stageEndsText = document.getElementById("stageEndsText");
-    const presaleEndsText = document.getElementById("presaleEndsText");
-
-    const netText = document.getElementById("netText");
-    const presaleAddrShort = document.getElementById("presaleAddrShort");
-    const copyAddrBtn = document.getElementById("copyAddrBtn");
-    const presaleLink = document.getElementById("presaleLink");
-
-    const tokenomicsBtn = document.getElementById("tokenomicsBtn");
-    const tokenomicsBackdrop = document.getElementById("tokenomicsBackdrop");
-    const closeTokenomics = document.getElementById("closeTokenomics");
-
-    const modalBackdrop = document.getElementById("modalBackdrop");
-    const closeModal = document.getElementById("closeModal");
-    const statusText = document.getElementById("statusText");
-
-    const connectBtn = document.getElementById("connectBtn");
-    const disconnectBtn = document.getElementById("disconnectBtn");
-
-    
-    const topConnectBtn = document.getElementById("topConnectBtn");
-    const topDisconnectBtn = document.getElementById("topDisconnectBtn");
-    const openBuyBtn = document.getElementById("openBuyBtn");
-    const walletText = document.getElementById("walletText");
-    const walletDot = document.getElementById("walletDot");
-    const balText = document.getElementById("balText");
-    const maxBtn = document.getElementById("maxBtn");
-    const toastWrap = document.getElementById("toastWrap");
-const myEliteText = document.getElementById("myEliteText");
-    const myUsdText = document.getElementById("myUsdText");
-
-    const paySelect = document.getElementById("paySelect");
-    const amountInput = document.getElementById("amountInput");
-    const buyBtn = document.getElementById("buyBtn");
-
-    const bnbUsdText = document.getElementById("bnbUsdText");
-    const estUsdText = document.getElementById("estUsdText");
-    const estEliteText = document.getElementById("estEliteText");
-    const estNote = document.getElementById("estNote");
-
-    const claimBtn = document.getElementById("claimBtn");
-    const txNote = document.getElementById("txNote");
-    const claimNote = document.getElementById("claimNote");
-
-    // =========================
-    // Helpers
-    // =========================
-    function shortAddr(a) { return a ? a.slice(0,6) + "..." + a.slice(-4) : ""; }
-    function clampPct(x) { return Math.max(0, Math.min(100, x)); }
-    function fmtTokenWhole(weiBn) {
-      const v = ethers.utils.formatUnits(weiBn, 18);
-      const n = Math.floor(Number(v));
-      if (!isFinite(n)) return v;
-      return n.toLocaleString("es-CL");
+  async function copyText(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      el("infoMsg").textContent = "Copiado ✅";
+      setTimeout(()=> el("infoMsg").textContent = "Página anónima: sin nombres ni fotos personales. Solo Elite Club.", 1800);
+    }catch{
+      el("infoMsg").textContent = "No se pudo copiar. Copia manualmente.";
+      setTimeout(()=> el("infoMsg").textContent = "Página anónima: sin nombres ni fotos personales. Solo Elite Club.", 2200);
     }
-    function fmtElite(wei) {
-      const v = ethers.utils.formatUnits(wei, 18);
-      const n = Number(v);
-      if (!isFinite(n)) return v + " ELITE";
-      return n.toLocaleString("es-CL", { maximumFractionDigits: 4 }) + " ELITE";
-    }
-    function fmtUsd1e6(u) {
-      const usd = Number(u) / 1e6;
-      return "$" + usd.toLocaleString("en-US", { maximumFractionDigits: 2 });
-    }
-    function fmtUsdPriceFromMicro(p) {
-      const usd = Number(p) / 1e6;
-      return "$" + usd.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
-    }
-    
+  }
 
-    // Toasts (sin alerts)
-    function showToast(message, type = "info", title = "") {
-      if (!toastWrap) { alert(message); return; }
-      const el = document.createElement("div");
-      el.className = "toast " + type;
-      el.innerHTML = `
-        <div style="padding-top:1px;">
-          <div class="t-title">${title || (type === "success" ? "Listo" : type === "error" ? "Error" : type === "warn" ? "Atención" : "Info")}</div>
-          <div class="t-msg">${String(message).replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
-        </div>
-        <button class="t-x" aria-label="Cerrar">✕</button>
-      `;
-      const btn = el.querySelector(".t-x");
-      btn.addEventListener("click", () => el.remove());
-      toastWrap.appendChild(el);
-      setTimeout(() => { if (el.isConnected) el.remove(); }, 5500);
-    }
+  /***********************
+   * Network / providers
+   ***********************/
+  const BSC_PARAMS = {
+    chainId: CONFIG.chainIdHex,
+    chainName: CONFIG.chainName,
+    nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+    rpcUrls: [CONFIG.rpc],
+    blockExplorerUrls: ["https://bscscan.com/"]
+  };
 
-    function setWalletBadge(state, label) {
-      // state: "disconnected" | "ok" | "warn" | "bad"
-      if (walletText) walletText.textContent = label || "";
-      if (walletDot) {
-        walletDot.className = "dot";
-        if (state === "ok") walletDot.classList.add("ok");
-        else if (state === "warn") walletDot.classList.add("warn");
-        else if (state === "bad") walletDot.classList.add("bad");
+  async function ensureBsc(){
+    const eth = window.ethereum;
+    if(!eth) throw new Error("NO_METAMASK");
+    const chainId = await eth.request({ method:"eth_chainId" });
+    if(chainId === CONFIG.chainIdHex) return;
+    try{
+      await eth.request({ method:"wallet_switchEthereumChain", params:[{ chainId: CONFIG.chainIdHex }] });
+    }catch(err){
+      if(err && err.code === 4902){
+        await eth.request({ method:"wallet_addEthereumChain", params:[BSC_PARAMS] });
+      }else{
+        throw err;
       }
     }
-function fmtUsd(x) {
-      if (!isFinite(x)) return "—";
-      return "$" + x.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  }
+
+  /***********************
+   * Read-only contract for progress
+   ***********************/
+  const readProvider = new ethers.providers.JsonRpcProvider(CONFIG.rpc);
+  const presaleRead = new ethers.Contract(CONFIG.presaleAddress, CONFIG.presaleAbi, readProvider);
+
+  let lastStageNumber = 1;
+  let lastPriceUsd1e6 = null;
+
+  async function refreshProgress(){
+    try{
+      const sold = await presaleRead.soldTokens();
+      const st = await presaleRead.currentStage();
+
+      const stageNum = Number(st.stage.toString());
+      lastStageNumber = stageNum;
+      lastPriceUsd1e6 = st.priceUsd1e6;
+
+      el("stageText").textContent = `Stage ${stageNum} / 3`;
+      el("priceText").textContent = fmtUsdPriceFromMicro(st.priceUsd1e6);
+      el("soldText").textContent  = fmtTokenWhole(sold);
+
+      const pctTotal = sold.mul(10_000).div(CONFIG.totalPresaleTokensWei).toNumber() / 100;
+      const pct = clampPct(pctTotal);
+      el("progressBar").style.width = pct.toFixed(2) + "%";
+    }catch(e){
+      // si por alguna razón no responde, no rompemos la UI
+      // console.error(e);
     }
-    function fmtEliteNumber(x) {
-      if (!isFinite(x)) return "—";
-      return x.toLocaleString("es-CL", { maximumFractionDigits: 4 }) + " ELITE";
+  }
+
+  /***********************
+   * MetaMask write
+   ***********************/
+  let provider = null;
+  let signer = null;
+  let account = null;
+  let presaleWrite = null;
+
+  async function refreshNetworkUi(){
+    if(!window.ethereum){ el("netText").textContent = "—"; return; }
+    try{
+      const chainId = await window.ethereum.request({ method:"eth_chainId" });
+      el("netText").textContent = (chainId === CONFIG.chainIdHex) ? "BNB Chain ✅" : "Cambia a BNB Chain ⚠️";
+    }catch{ el("netText").textContent = "—"; }
+  }
+
+  async function refreshWalletUi(){
+    if(!provider || !account){
+      el("walletText").textContent = "—";
+      el("balanceText").textContent = "—";
+      return;
     }
-    function formatCountdown(msLeft) {
-      if (msLeft <= 0) return "Finalizado";
-      const sec = Math.floor(msLeft / 1000);
-      const d = Math.floor(sec / 86400);
-      const h = Math.floor((sec % 86400) / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-      const pad = (n) => String(n).padStart(2, "0");
-      return `${d}d ${pad(h)}:${pad(m)}:${pad(s)}`;
+    el("walletText").textContent = shortAddr(account);
+    const bal = await provider.getBalance(account);
+    el("balanceText").textContent = Number(ethers.utils.formatEther(bal)).toFixed(4);
+  }
+
+  function setDisconnectedUi(){
+    el("btnConnect").disabled = false;
+    el("btnDisconnect").disabled = true;
+    el("btnBuy").disabled = true;
+    el("btnMax").disabled = true;
+    el("btnClaim").disabled = true;
+    el("txNote").textContent = "";
+    el("claimNote").textContent = "";
+    setStatus("warn", "Desconectado", "Desconectado");
+  }
+
+  function setConnectedUi(){
+    el("btnConnect").disabled = true;
+    el("btnDisconnect").disabled = false;
+    el("btnBuy").disabled = false;
+    el("btnMax").disabled = false;
+    setStatus("ok", `Conectado: ${shortAddr(account)}`, `Conectado: ${shortAddr(account)}`);
+  }
+
+  async function connect(){
+    const eth = window.ethereum;
+    if(!eth){
+      setStatus("warn","MetaMask no detectado","MetaMask no detectado");
+      el("quickMsg").textContent = "Instala MetaMask para continuar.";
+      return;
     }
+    try{
+      setStatus("warn","Conectando…","Conectando…");
+      el("quickMsg").textContent = "Conectando a MetaMask…";
+      await ensureBsc();
 
-    async function ensureBsc(providerLike) {
-      const chainId = await providerLike.request({ method: "eth_chainId" });
-      if (chainId === BSC_CHAIN_ID_HEX) return;
-      try {
-        await providerLike.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BSC_CHAIN_ID_HEX }] });
-      } catch (err) {
-        if (err && err.code === 4902) {
-          await providerLike.request({ method: "wallet_addEthereumChain", params: [BSC_PARAMS] });
-        } else {
-          throw err;
-        }
-      }
+      provider = new ethers.providers.Web3Provider(eth);
+      const accs = await eth.request({ method:"eth_requestAccounts" });
+      account = accs && accs[0] ? accs[0] : null;
+      signer = provider.getSigner();
+      presaleWrite = new ethers.Contract(CONFIG.presaleAddress, CONFIG.presaleAbi, signer);
+
+      await refreshNetworkUi();
+      setConnectedUi();
+      await refreshWalletUi();
+      await refreshMyStats();
+
+      el("quickMsg").textContent = "Listo. Abre Comprar para invertir.";
+    }catch(e){
+      // console.error(e);
+      setStatus("warn","Cancelado / Error","Cancelado / Error");
+      el("quickMsg").textContent = "No se pudo conectar. Abre MetaMask e intenta otra vez.";
     }
+  }
 
-    // =========================
-    // Init UI
-    // =========================
-    totalText.textContent = (30_000_000).toLocaleString("es-CL");
-    presaleAddrShort.textContent = shortAddr(PRESALE_ADDRESS);
-    presaleLink.href = EXPLORER_ADDR + PRESALE_ADDRESS;
+  function disconnectLocal(){
+    provider = null; signer = null; account = null; presaleWrite = null;
+    setDisconnectedUi();
+    refreshNetworkUi();
+    refreshWalletUi();
+    el("quickMsg").textContent = "Conecta MetaMask en BSC (BNB Chain).";
+  }
 
-    copyAddrBtn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(PRESALE_ADDRESS);
-        copyAddrBtn.textContent = "✅ Copiado";
-        setTimeout(() => (copyAddrBtn.textContent = "Copiar"), 1200);
-      } catch {
-        showToast("Copia manual: " + PRESALE_ADDRESS, "info");
-      }
-    });
-
-    // =========================
-    // Read + progress
-    // =========================
-    const readProvider = new ethers.providers.JsonRpcProvider(RPC);
-    const presaleRead = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, readProvider);
-
-    let lastStageNumber = 1;
-    let lastPriceUsd1e6 = null;
-
-    async function refreshProgress() {
-      try {
-        const sold = await presaleRead.soldTokens();
-        const st = await presaleRead.currentStage();
-
-        const stageNum = Number(st.stage.toString());
-        lastStageNumber = stageNum;
-
-        stageText.textContent = `Stage ${stageNum} / 3`;
-        priceText.textContent = fmtUsdPriceFromMicro(st.priceUsd1e6);
-        lastPriceUsd1e6 = st.priceUsd1e6;
-
-        soldText.textContent = fmtTokenWhole(sold);
-
-        const pctTotal = sold.mul(10_000).div(TOTAL_PRESALE_TOKENS_WEI).toNumber() / 100;
-        const pctTotalC = clampPct(pctTotal);
-        progressTotal.style.width = pctTotalC.toFixed(2) + "%";
-        pctText.textContent = pctTotalC.toFixed(2) + "%";
-
-        const stageSold = st.stageSold;
-        const stageCap = st.stageCap;
-
-        const stageRemainWei = stageCap.sub(stageSold);
-        stageRemainText.textContent = fmtTokenWhole(stageRemainWei);
-
-        const pctStage = stageSold.mul(10_000).div(stageCap).toNumber() / 100;
-        const pctStageC = clampPct(pctStage);
-        progressStage.style.width = pctStageC.toFixed(2) + "%";
-        stagePctText.textContent = pctStageC.toFixed(2) + "%";
-
-        updateEstimate();
-      } catch (e) {
-        console.error("refreshProgress error", e);
-      }
+  async function refreshMyStats(){
+    if(!presaleWrite || !account){
+      el("btnClaim").disabled = true;
+      el("claimNote").textContent = "";
+      return;
     }
-
-    function refreshCountdown() {
-      const now = Date.now();
-      const stageEnd = STAGE_END_MS[lastStageNumber];
-      stageEndsText.textContent = formatCountdown(stageEnd - now);
-      presaleEndsText.textContent = formatCountdown(PRESALE_END_MS - now);
-    }
-
-    refreshProgress().then(refreshCountdown);
-    setInterval(async () => { await refreshProgress(); refreshCountdown(); }, 15000);
-    setInterval(refreshCountdown, 1000);
-
-    // =========================
-    // Tokenomics modal
-    // =========================
-    tokenomicsBtn.addEventListener("click", () => tokenomicsBackdrop.style.display = "flex");
-    closeTokenomics.addEventListener("click", () => tokenomicsBackdrop.style.display = "none");
-    tokenomicsBackdrop.addEventListener("click", (e) => { if (e.target === tokenomicsBackdrop) tokenomicsBackdrop.style.display = "none"; });
-
-    // =========================
-    // Modal open/close
-    // =========================
-    function openModal() { modalBackdrop.style.display = "flex"; }
-    function closeModalFn() { modalBackdrop.style.display = "none"; }
-    closeModal.addEventListener("click", closeModalFn);
-    modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) closeModalFn(); });
-
-    // =========================
-    // MetaMask state
-    // =========================
-    let provider = null;
-    let signer = null;
-    let account = null;
-    let presaleWrite = null;
-
-    async function refreshNetworkUi() {
-      if (!window.ethereum) { netText.textContent = "—"; return; }
-      try {
-        const chainId = await window.ethereum.request({ method: "eth_chainId" });
-        netText.textContent = (chainId === BSC_CHAIN_ID_HEX) ? "BNB Chain ✅" : "Cambia a BNB Chain ⚠️";
-      } catch { netText.textContent = "—"; }
-    }
-
-    function setDisconnectedUi() {
-      statusText.textContent = "Desconectado";
-      connectBtn.style.display = "inline-block";
-      disconnectBtn.style.display = "none";
-
-      if (topConnectBtn) topConnectBtn.style.display = "inline-block";
-      if (topDisconnectBtn) topDisconnectBtn.style.display = "none";
-
-      if (walletText) walletText.textContent = "Wallet no conectada";
-      setWalletBadge("disconnected", "Wallet no conectada");
-
-      buyBtn.disabled = true;
-      claimBtn.disabled = true;
-
-      if (balText) balText.textContent = "—";
-      if (maxBtn) maxBtn.disabled = true;
-
-      myEliteText.textContent = "0 ELITE";
-      myUsdText.textContent = "$0";
-      txNote.textContent = "";
-      claimNote.textContent = "";
-    }
-
-    function setConnectedUi() {
-      statusText.textContent = "Conectado: " + shortAddr(account);
-      connectBtn.style.display = "none";
-      disconnectBtn.style.display = "inline-block";
-
-      if (topConnectBtn) topConnectBtn.style.display = "none";
-      if (topDisconnectBtn) topDisconnectBtn.style.display = "inline-block";
-
-      setWalletBadge("ok", "Conectado: " + shortAddr(account));
-      buyBtn.disabled = false;
-    }
-
-    async function refreshMyStats() {
-      if (!presaleWrite || !account) { setDisconnectedUi(); return; }
-
+    try{
       const elite = await presaleWrite.purchasedTokens(account);
-      const usd1e6 = await presaleWrite.contributedUsd1e6(account);
-
-      myEliteText.textContent = fmtElite(elite);
-      myUsdText.textContent = fmtUsd1e6(usd1e6);
-
       const isFinalized = await presaleWrite.presaleFinalized();
       const isClaimEnabled = await presaleWrite.claimEnabled();
       const isClaimed = await presaleWrite.claimed(account);
 
-      if (isFinalized && isClaimEnabled && !isClaimed && elite.gt(0)) {
-        claimBtn.disabled = false;
-        claimNote.textContent = "Claim disponible: puedes retirar tus ELITE.";
-      } else if (isFinalized && !isClaimEnabled) {
-        claimBtn.disabled = true;
-        claimNote.textContent = "La preventa terminó, pero el claim aún no está habilitado.";
-      } else if (isClaimed) {
-        claimBtn.disabled = true;
-        claimNote.textContent = "Ya hiciste claim.";
-      } else {
-        claimBtn.disabled = true;
-        claimNote.textContent = "";
+      if(isFinalized && isClaimEnabled && !isClaimed && elite.gt(0)){
+        el("btnClaim").disabled = false;
+        el("claimNote").textContent = "Claim disponible: puedes retirar tus ELITE.";
+      }else if(isClaimed){
+        el("btnClaim").disabled = true;
+        el("claimNote").textContent = "Ya hiciste claim.";
+      }else{
+        el("btnClaim").disabled = true;
+        el("claimNote").textContent = "";
       }
+    }catch{
+      el("btnClaim").disabled = true;
+    }
+  }
+
+  /***********************
+   * BNB/USD + estimación
+   ***********************/
+  let cachedBnbUsd = null;
+  let cachedBnbUsdAt = 0;
+
+  async function fetchBnbUsd(){
+    const now = Date.now();
+    if(cachedBnbUsd && (now - cachedBnbUsdAt) < 30000) return cachedBnbUsd;
+
+    // Binance
+    try{
+      const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT", { cache:"no-store" });
+      if(r.ok){
+        const j = await r.json();
+        const p = Number(j.price);
+        if(isFinite(p) && p > 0){ cachedBnbUsd = p; cachedBnbUsdAt = now; return p; }
+      }
+    }catch{}
+
+    // CoinGecko fallback
+    try{
+      const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd", { cache:"no-store" });
+      if(r.ok){
+        const j = await r.json();
+        const p = Number(j?.binancecoin?.usd);
+        if(isFinite(p) && p > 0){ cachedBnbUsd = p; cachedBnbUsdAt = now; return p; }
+      }
+    }catch{}
+
+    throw new Error("BNB_PRICE_UNAVAILABLE");
+  }
+
+  async function refreshBnbUsdUi(){
+    try{
+      const p = await fetchBnbUsd();
+      el("bnbUsdText").textContent = fmtUsd(p);
+    }catch{
+      el("bnbUsdText").textContent = "—";
+    }
+  }
+
+  async function updateEstimate(){
+    await refreshBnbUsdUi();
+
+    if(!lastPriceUsd1e6){
+      el("estUsdText").textContent = "—";
+      el("estEliteText").textContent = "—";
+      el("estNote").textContent = "Aún no hay precio de etapa. Espera un momento.";
+      return;
     }
 
-    async function connectMetaMaskOrThrow() {
-      const eth = window.ethereum;
-      if (!eth) throw new Error("NO_METAMASK");
-
-      statusText.textContent = "Conectando...";
-
-      const accounts = await eth.request({ method: "eth_requestAccounts" });
-      if (!accounts || !accounts.length) throw new Error("NO_ACCOUNTS");
-
-      await ensureBsc(eth);
-
-      provider = new ethers.providers.Web3Provider(eth);
-      signer = provider.getSigner();
-      account = accounts[0];
-      presaleWrite = new ethers.Contract(PRESALE_ADDRESS, PRESALE_ABI, signer);
-
-      await refreshNetworkUi();
-      setConnectedUi();
-      await refreshMyStats();
-      await refreshBalance();
+    const raw = (el("amountInput").value || "").trim().replace(",", ".");
+    if(!raw || Number(raw) <= 0){
+      el("estUsdText").textContent = "—";
+      el("estEliteText").textContent = "—";
+      el("estNote").textContent = "Ingresa un monto para estimar.";
+      return;
     }
 
-    function disconnectLocal() {
-      provider = null;
-      signer = null;
-      presaleWrite = null;
-      account = null;
-      setDisconnectedUi();
+    const currency = el("paySelect").value;
+    const amount = Number(raw);
+    const priceUsd = Number(lastPriceUsd1e6) / 1e6;
+
+    try{
+      let usd = 0;
+      if(currency === "BNB"){
+        const bnbUsd = await fetchBnbUsd();
+        usd = amount * bnbUsd;
+        el("estNote").textContent = "Estimación usando BNB/USD (aprox).";
+      }else{
+        usd = amount; // stable ~ 1 USD
+        el("estNote").textContent = "Estimación usando stablecoin (≈ 1 USD).";
+      }
+      const elite = usd / priceUsd;
+      el("estUsdText").textContent = fmtUsd(usd);
+      el("estEliteText").textContent = isFinite(elite) ? elite.toLocaleString("es-CL",{maximumFractionDigits:4}) + " ELITE" : "—";
+    }catch{
+      el("estUsdText").textContent = "—";
+      el("estEliteText").textContent = "—";
+      el("estNote").textContent = "No se pudo obtener BNB/USD. Prueba con USDT/USDC.";
+    }
+  }
+
+  /***********************
+   * Buy / Claim
+   ***********************/
+  async function setMax(){
+    if(!provider || !account) return;
+    const bal = await provider.getBalance(account);
+    const margin = ethers.utils.parseEther("0.003"); // margen gas
+    const max = bal.gt(margin) ? bal.sub(margin) : ethers.constants.Zero;
+    el("amountInput").value = Number(ethers.utils.formatEther(max)).toFixed(6);
+    updateEstimate();
+  }
+
+  async function buy(){
+    if(!account) await connect();
+
+    if(!presaleWrite || !signer || !account){
+      el("txNote").textContent = "Conecta MetaMask primero.";
+      return;
     }
 
-    
+    await ensureBsc();
 
-    async function refreshBalance() {
-      try {
-        if (!provider || !account) {
-          if (balText) balText.textContent = "—";
-          if (maxBtn) maxBtn.disabled = true;
-          return;
-        }
-        const currency = paySelect.value;
-
-        if (currency === "BNB") {
-          const b = await provider.getBalance(account);
-          const v = Number(ethers.utils.formatEther(b));
-          if (balText) balText.textContent = (isFinite(v) ? v.toLocaleString("es-CL", { maximumFractionDigits: 6 }) : "—") + " BNB";
-          if (maxBtn) maxBtn.disabled = false;
-        } else {
-          const tokenAddr = currency === "USDT" ? USDT_ADDRESS : USDC_ADDRESS;
-          const token = new ethers.Contract(tokenAddr, ["function balanceOf(address) view returns (uint256)","function decimals() view returns (uint8)"], provider);
-          const dec = await token.decimals();
-          const bal = await token.balanceOf(account);
-          const v = Number(ethers.utils.formatUnits(bal, dec));
-          if (balText) balText.textContent = (isFinite(v) ? v.toLocaleString("es-CL", { maximumFractionDigits: 6 }) : "—") + " " + currency;
-          if (maxBtn) maxBtn.disabled = false;
-        }
-      } catch (e) {
-        console.error("refreshBalance", e);
-        if (balText) balText.textContent = "—";
-        if (maxBtn) maxBtn.disabled = true;
-      }
+    const currency = el("paySelect").value;
+    const raw = (el("amountInput").value || "").trim().replace(",", ".");
+    if(!raw || Number(raw) <= 0){
+      el("txNote").textContent = "Ingresa un monto válido.";
+      return;
     }
 
-    function setMaxAmount() {
-      if (!provider || !account) return;
-      const currency = paySelect.value;
-      const rawBal = (balText?.textContent || "").split(" ")[0].replace(/\./g,"").replace(",",".");
-      const bal = Number(rawBal);
-      if (!isFinite(bal) || bal <= 0) return;
+    el("txNote").textContent = "";
+    el("claimNote").textContent = "";
 
-      if (currency === "BNB") {
-        // deja un margen para gas
-        const safe = Math.max(0, bal * 0.95);
-        amountInput.value = safe.toFixed(6);
-      } else {
-        amountInput.value = bal.toFixed(6);
-      }
-      updateEstimate();
-    }
-connectBtn.addEventListener("click", async () => {
-      try {
-        await connectMetaMaskOrThrow();
-        await refreshBalance();
-        updateEstimate();
-        showToast("Wallet conectada.", "success");
-      } catch (e) {
-        console.error(e);
-        if (e && e.message === "NO_METAMASK") showToast("No se detectó MetaMask. Instala MetaMask o abre esta página en el navegador de MetaMask.", "error");
-        else if (e && e.code === 4001) showToast("Conexión cancelada en MetaMask.", "warn");
-        else showToast("No se pudo conectar. Reintenta.", "error");
-      }
-    });
-
-    disconnectBtn.addEventListener("click", () => {
-      disconnectLocal();
-      showToast("Sesión cerrada en la página. Para desconectar el sitio en MetaMask: Connected sites → Disconnect.", "info", "Salir");
-    });
-    // Controles superiores (fuera del modal)
-    if (openBuyBtn) openBuyBtn.addEventListener("click", () => { openModal(); });
-
-    if (topConnectBtn) topConnectBtn.addEventListener("click", async () => {
-      openModal();
-      try {
-        await connectMetaMaskOrThrow();
-        await refreshBalance();
-        updateEstimate();
-        showToast("Wallet conectada.", "success");
-      } catch (e) {
-        console.error(e);
-        if (e && e.message === "NO_METAMASK") showToast("No se detectó MetaMask. Instala MetaMask o abre esta página en el navegador de MetaMask.", "error");
-        else if (e && e.code === 4001) showToast("Conexión cancelada en MetaMask.", "warn");
-        else showToast("No se pudo conectar. Reintenta.", "error");
-      }
-    });
-
-    if (topDisconnectBtn) topDisconnectBtn.addEventListener("click", () => {
-      disconnectLocal();
-      showToast("Sesión cerrada en la página.", "info", "Salir");
-    });
-
-    if (maxBtn) maxBtn.addEventListener("click", () => setMaxAmount());
-
-
-    // =========================
-    // BNB/USD + estimación
-    // =========================
-    let cachedBnbUsd = null;
-    let cachedBnbUsdAt = 0;
-
-    async function fetchBnbUsd() {
-      const now = Date.now();
-      if (cachedBnbUsd && (now - cachedBnbUsdAt) < 30000) return cachedBnbUsd;
-
-      try {
-        const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT", { cache: "no-store" });
-        if (r.ok) {
-          const j = await r.json();
-          const p = Number(j.price);
-          if (isFinite(p) && p > 0) { cachedBnbUsd = p; cachedBnbUsdAt = now; return p; }
-        }
-      } catch {}
-
-      try {
-        const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd", { cache: "no-store" });
-        if (r.ok) {
-          const j = await r.json();
-          const p = Number(j?.binancecoin?.usd);
-          if (isFinite(p) && p > 0) { cachedBnbUsd = p; cachedBnbUsdAt = now; return p; }
-        }
-      } catch {}
-
-      throw new Error("BNB_PRICE_UNAVAILABLE");
-    }
-
-    async function refreshBnbUsdUi() {
-      try {
-        const p = await fetchBnbUsd();
-        bnbUsdText.textContent = fmtUsd(p);
-      } catch { bnbUsdText.textContent = "—"; }
-    }
-
-    async function updateEstimate() {
-      await refreshBnbUsdUi();
-
-      if (!lastPriceUsd1e6) {
-        estUsdText.textContent = "—";
-        estEliteText.textContent = "—";
-        estNote.textContent = "Aún no hay precio de etapa. Espera un momento.";
-        return;
-      }
-
-      const raw = (amountInput.value || "").trim();
-      if (!raw || Number(raw) <= 0) {
-        estUsdText.textContent = "—";
-        estEliteText.textContent = "—";
-        estNote.textContent = "Ingresa un monto para estimar.";
-        return;
-      }
-
-      const currency = paySelect.value;
-      const amount = Number(raw);
-      const priceUsd = Number(lastPriceUsd1e6) / 1e6;
-
-      try {
-        let usd = 0;
-        if (currency === "BNB") {
-          const bnbUsd = await fetchBnbUsd();
-          usd = amount * bnbUsd;
-          estNote.textContent = "Estimación usando BNB/USD (aprox).";
-        } else {
-          usd = amount;
-          estNote.textContent = "Estimación usando stablecoin (≈ 1 USD).";
-        }
-
-        const elite = usd / priceUsd;
-        estUsdText.textContent = fmtUsd(usd);
-        estEliteText.textContent = fmtEliteNumber(elite);
-      } catch {
-        estUsdText.textContent = "—";
-        estEliteText.textContent = "—";
-        estNote.textContent = "No se pudo obtener BNB/USD. Prueba con USDT/USDC.";
-      }
-    }
-
-    paySelect.addEventListener("change", async () => { await refreshBalance(); updateEstimate(); });
-    amountInput.addEventListener("input", () => {
-      clearTimeout(window.__est_t);
-      window.__est_t = setTimeout(updateEstimate, 250);
-    });
-
-    // =========================
-    // Buy / Claim
-    // =========================
-    async function buy() {
-      if (!account) await connectMetaMaskOrThrow();
-
-      const currency = paySelect.value;
-      const raw = (amountInput.value || "").trim();
-      if (!raw || Number(raw) <= 0) { showToast("Ingresa un monto válido.", "warn"); return; }
-
-      txNote.textContent = "";
-
-      if (currency === "BNB") {
+    try{
+      if(currency === "BNB"){
         const tx = await presaleWrite.buyWithBNB({ value: ethers.utils.parseEther(raw) });
-        txNote.innerHTML = `Transacción enviada: <a href="${EXPLORER_TX + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        el("txNote").innerHTML = `Transacción enviada: <a href="${CONFIG.explorerTx + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
         await tx.wait();
-      } else {
-        const tokenAddr = currency === "USDT" ? USDT_ADDRESS : USDC_ADDRESS;
+      }else{
+        const tokenAddr = (currency === "USDT") ? CONFIG.usdtAddress : CONFIG.usdcAddress;
 
-        const token = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
+        const token = new ethers.Contract(tokenAddr, CONFIG.erc20Abi, signer);
         const dec = await token.decimals();
         const amt = ethers.utils.parseUnits(raw, dec);
 
-        const tx1 = await token.approve(PRESALE_ADDRESS, amt);
-        txNote.innerHTML = `Approve enviado: <a href="${EXPLORER_TX + tx1.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        const tx1 = await token.approve(CONFIG.presaleAddress, amt);
+        el("txNote").innerHTML = `Approve enviado: <a href="${CONFIG.explorerTx + tx1.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
         await tx1.wait();
 
         const tx2 = await presaleWrite.buyWithStable(tokenAddr, amt);
-        txNote.innerHTML = `Compra enviada: <a href="${EXPLORER_TX + tx2.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+        el("txNote").innerHTML = `Compra enviada: <a href="${CONFIG.explorerTx + tx2.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
         await tx2.wait();
       }
 
-      await refreshMyStats();
+      el("txNote").textContent = "Compra confirmada ✅";
+      el("amountInput").value = "";
       await refreshProgress();
-      refreshCountdown();
-      amountInput.value = "";
-      updateEstimate();
-    }
-
-    buyBtn.addEventListener("click", async () => {
-      try { await buy(); }
-      catch (e) { console.error(e); showToast(String(e?.reason || e?.message || e), "error", "Error"); }
-    });
-
-    async function claim() {
-      if (!account) await connectMetaMaskOrThrow();
-
-      claimBtn.disabled = true;
-      claimNote.textContent = "Enviando claim...";
-
-      const tx = await presaleWrite.claim();
-      txNote.innerHTML = `Claim enviado: <a href="${EXPLORER_TX + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
-      await tx.wait();
-
       await refreshMyStats();
-      claimNote.textContent = "Claim completado ✅";
+      updateEstimate();
+
+    }catch(e){
+      el("txNote").textContent = "Error o transacción cancelada. Revisa MetaMask.";
     }
+  }
 
-    claimBtn.addEventListener("click", async () => {
-      try { await claim(); }
-      catch (e) { console.error(e); claimNote.textContent = ""; showToast(String(e?.reason || e?.message || e), "error", "Error"); }
-    });
+  async function claim(){
+    if(!account) await connect();
+    if(!presaleWrite) return;
 
-    // =========================
-    // Click puro: abre modal + conecta directo
-    // =========================
-    cigarHotspot.addEventListener("click", async () => {
-      openModal();
-      try { await connectMetaMaskOrThrow(); }
-      catch (e) {
-        console.error(e);
-        if (e && e.message === "NO_METAMASK") showToast("No se detectó MetaMask. Instala MetaMask o abre esta página en el navegador de MetaMask.", "error");
-        else if (e && e.code === 4001) showToast("Conexión cancelada.", "warn");
-        else showToast("No se pudo conectar. Reintenta.", "error");
-      }
-    });
+    el("btnClaim").disabled = true;
+    el("claimNote").textContent = "Enviando claim…";
 
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", () => { disconnectLocal(); });
-      window.ethereum.on("chainChanged", () => { disconnectLocal(); });
+    try{
+      const tx = await presaleWrite.claim();
+      el("txNote").innerHTML = `Claim enviado: <a href="${CONFIG.explorerTx + tx.hash}" target="_blank" rel="noreferrer">BscScan</a>`;
+      await tx.wait();
+      await refreshMyStats();
+      el("claimNote").textContent = "Claim completado ✅";
+    }catch(e){
+      el("claimNote").textContent = "";
+      el("txNote").textContent = "Error en claim / cancelado.";
+      await refreshMyStats();
     }
+  }
 
-    refreshNetworkUi();
+  /***********************
+   * Modal controls
+   ***********************/
+  function openBuy(){ el("buyBackdrop").style.display = "flex"; }
+  function closeBuy(){ el("buyBackdrop").style.display = "none"; }
+
+  /***********************
+   * Phrases
+   ***********************/
+  let phraseIndex = 0;
+  function startPhrases(){
+    const phrases = CONFIG.phrases || [];
+    if(!phrases.length){ el("phrase").textContent = ""; return; }
+    el("phrase").textContent = phrases[0];
+    setInterval(()=>{
+      phraseIndex = (phraseIndex + 1) % phrases.length;
+      el("phrase").textContent = phrases[phraseIndex];
+    }, 5000);
+  }
+
+  /***********************
+   * Init UI bindings
+   ***********************/
+  // Set addresses + links
+  el("tokenAddr").textContent = CONFIG.tokenAddress;
+  el("presaleAddr").textContent = CONFIG.presaleAddress;
+  el("tokenLink").href = CONFIG.explorerAddr + CONFIG.tokenAddress;
+  el("presaleLink").href = CONFIG.explorerAddr + CONFIG.presaleAddress;
+
+  el("copyToken").addEventListener("click", () => copyText(CONFIG.tokenAddress));
+  el("copyPresale").addEventListener("click", () => copyText(CONFIG.presaleAddress));
+
+  // Buttons
+  el("btnConnect").addEventListener("click", connect);
+  el("btnDisconnect").addEventListener("click", disconnectLocal);
+  el("btnOpenBuy").addEventListener("click", () => { openBuy(); updateEstimate(); });
+
+  // Hotspot cigar opens modal and connects
+  el("cigarHotspot").addEventListener("click", async () => {
+    openBuy();
+    await connect();
     updateEstimate();
-    setDisconnectedUi();
-  </script>
+  });
+
+  // Modal close
+  el("closeBuy").addEventListener("click", closeBuy);
+  el("buyBackdrop").addEventListener("click", (e) => { if(e.target === el("buyBackdrop")) closeBuy(); });
+
+  // Buy actions
+  el("btnMax").addEventListener("click", setMax);
+  el("btnBuy").addEventListener("click", buy);
+  el("btnClaim").addEventListener("click", claim);
+
+  // Estimate changes
+  el("paySelect").addEventListener("change", updateEstimate);
+  el("amountInput").addEventListener("input", () => {
+    clearTimeout(window.__est_t);
+    window.__est_t = setTimeout(updateEstimate, 250);
+  });
+
+  // MetaMask listeners
+  if(window.ethereum){
+    window.ethereum.on("accountsChanged", () => { disconnectLocal(); });
+    window.ethereum.on("chainChanged", () => { disconnectLocal(); });
+  }
+
+  // Start
+  startPhrases();
+  setDisconnectedUi();
+  refreshNetworkUi();
+  refreshWalletUi();
+  refreshProgress();
+  setInterval(refreshProgress, 15000);
+  setInterval(refreshBnbUsdUi, 15000);
+  refreshBnbUsdUi();
+</script>
 </body>
 </html>
